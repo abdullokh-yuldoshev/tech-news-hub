@@ -109,6 +109,8 @@
         let allNewsItems = []; 
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
+        let activeFetchToken = 0;
+        let activeFetchController = null;
         const RENDER_BATCH_SIZE = 9;
         const NEWS_CACHE_PREFIX = 'really_news_cache_v2_';
         const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -287,9 +289,9 @@
             }
         }
 
-        function isTechNewsItem(item) {
-            const text = `${item.title || ''} ${item.desc || ''}`.toLowerCase();
-            const keywords = currentLang === 'ru' ? TECH_KEYWORDS.ru : TECH_KEYWORDS.en;
+        function isTechNewsItem(item, lang) {
+            const text = `${item.title || ''} ${item.desc || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
+            const keywords = lang === 'ru' ? TECH_KEYWORDS.ru : TECH_KEYWORDS.en;
             return keywords.some(keyword => text.includes(keyword));
         }
 
@@ -299,9 +301,9 @@
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlStr, "application/xml");
             const nodes = xmlDoc.querySelectorAll("item, entry");
-            
-            nodes.forEach(node => {
-                if (items.length >= 24) return;
+
+            for (const node of nodes) {
+                if (items.length >= 24) break;
 
                 // Заголовок
                 const titleNode = node.querySelector("title");
@@ -370,6 +372,15 @@
                 // Если в атрибутах нет, ищем в HTML-контенте или описании
                 const descNode = node.querySelector("description, content, summary");
                 const rawDesc = descNode ? descNode.textContent : "";
+
+                const categories = [];
+                const categoryNodes = node.querySelectorAll("category");
+                categoryNodes.forEach(cat => {
+                    const term = cat.getAttribute('term');
+                    const text = cat.textContent;
+                    if (term && term.trim()) categories.push(term.trim());
+                    if (text && text.trim()) categories.push(text.trim());
+                });
                 
                 if (!imgUrl && rawDesc) {
                     const imgMatch = rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
@@ -387,22 +398,32 @@
                     link: link,
                     desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
                     img: safeAbsoluteUrl(imgUrl, ''),
+                    categories: categories,
                     pubDate: pubDate
                 });
-            });
+            }
 
             return items;
         }
 
-        async function fetchNews() {
+        async function fetchNews(lang = currentLang) {
+            const requestLang = lang === 'en' ? 'en' : 'ru';
+            const requestToken = ++activeFetchToken;
+
+            if (activeFetchController) {
+                activeFetchController.abort();
+            }
+            activeFetchController = new AbortController();
+
             document.getElementById('loader-list').classList.remove('hidden');
-            document.getElementById('loader-list').innerText = dict[currentLang].loading;
+            document.getElementById('loader-list').innerText = dict[requestLang].loading;
             document.getElementById('news-grid').innerHTML = '';
             document.getElementById('load-more-container').classList.add('hidden');
             allNewsItems = [];
 
-            const cachedItems = getCachedNews(currentLang);
+            const cachedItems = getCachedNews(requestLang);
             if (cachedItems && cachedItems.length > 0) {
+                if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
                 allNewsItems = [...cachedItems].sort((a, b) => b.timestamp - a.timestamp);
                 applyFilter('all');
                 return;
@@ -410,12 +431,14 @@
 
             try {
                 // Запрашиваем наш бэкенд
-                const res = await fetch(`/api/news?lang=${currentLang}`);
+                const res = await fetch(`/api/news?lang=${requestLang}`, { signal: activeFetchController.signal });
                 const xmlText = await res.text();
                 
                 if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
 
-                const rawItems = parseXML(xmlText).filter(isTechNewsItem);
+                const rawItems = parseXML(xmlText).filter(item => isTechNewsItem(item, requestLang));
+
+                if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
 
                 rawItems.forEach(item => {
                     const dateInfo = parseAndFormatDate(item.pubDate);
@@ -425,13 +448,14 @@
                 if (allNewsItems.length === 0) throw new Error("Лента пуста");
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                setCachedNews(currentLang, allNewsItems);
+                setCachedNews(requestLang, allNewsItems);
                 applyFilter('all');
 
             } catch (error) {
+                if (error.name === 'AbortError') return;
                 console.error("Критическая ошибка:", error);
                 document.getElementById('loader-list').classList.remove('hidden');
-                document.getElementById('loader-list').innerText = dict[currentLang].error;
+                document.getElementById('loader-list').innerText = dict[requestLang].error;
             }
         }
 
@@ -525,7 +549,7 @@
         
         window.addEventListener('DOMContentLoaded', () => {
             updateTexts();
-            fetchNews();
+            fetchNews(currentLang);
         });
     </script>
 </body>
