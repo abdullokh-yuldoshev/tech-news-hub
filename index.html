@@ -4,24 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
-    <!-- Tailwind CSS (для сетки и отступов) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* НОЧНОЙ РЕЖИМ (Твоя палитра строго без зеленого!) */
+        /* НОЧНАЯ ТЕМА (Строго без зеленого) */
         :root {
             --bg-color: #0a1128;
             --card-bg: #001f54;
             --card-border: #034078;
             --accent: #034078;
             --text-main: #dce1de;
-            --text-muted: rgba(220, 225, 222, 0.65); /* #dce1de с прозрачностью */
+            --text-muted: rgba(220, 225, 222, 0.65); 
             --glow: rgba(3, 64, 120, 0.4);
             --btn-text: #dce1de;
         }
 
-        /* ДНЕВНОЙ РЕЖИМ (Лесной зеленый) */
+        /* ДНЕВНАЯ ТЕМА (Лесная палитра) */
         body.theme-light {
             --bg-color: #1f2421;
             --card-bg: rgba(33, 104, 105, 0.2);
@@ -33,7 +33,6 @@
             --btn-text: #1f2421;
         }
 
-        /* БАЗОВЫЕ СТИЛИ */
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
@@ -44,18 +43,14 @@
         
         .app-navbar { background-color: var(--bg-color); border-bottom: 1px solid var(--card-border); opacity: 0.98; }
         .app-card { background-color: var(--card-bg); border: 1px solid var(--card-border); transition: all 0.3s ease; }
-        
-        /* Исправленный ховер, чтобы не сливалось */
         .app-card:hover { border-color: var(--text-muted); box-shadow: 0 15px 30px -10px var(--glow); transform: translateY(-4px); }
         
         .text-accent { color: var(--text-main); font-weight: 800; text-shadow: 0 0 10px var(--glow); }
         .text-muted { color: var(--text-muted); }
-        
         .bg-accent { background-color: var(--accent); color: var(--btn-text); }
         .border-custom { border-color: var(--card-border); }
         
-        /* Стили фильтров */
-        .filter-btn { border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+        .filter-btn { border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; }
         .filter-btn:hover { border-color: var(--text-main); color: var(--text-main); }
         .filter-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--btn-text); }
 
@@ -67,10 +62,9 @@
 </head>
 <body class="min-h-screen"> 
 
-    <!-- НАВИГАЦИЯ -->
     <header class="sticky top-0 z-50 backdrop-blur-md app-navbar">
         <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
-            <a href="#" class="flex items-center space-x-2 group">
+            <a href="#" class="flex items-center space-x-2 group" onclick="location.reload()">
                 <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
                     <span class="code-font font-bold text-xl text-[var(--btn-text)]">?</span>
                 </div>
@@ -92,13 +86,11 @@
 
     <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-8">
         
-        <!-- ПАНЕЛЬ ФИЛЬТРОВ И ЗАГОЛОВОК -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight flex items-center gap-2">
                 <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
             </h2>
             
-            <!-- Фильтры по дате -->
             <div class="flex space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide" id="filters-container">
                 <button onclick="applyFilter('all')" id="filter-all" class="filter-btn active">Все</button>
                 <button onclick="applyFilter('today')" id="filter-today" class="filter-btn">Сегодня</button>
@@ -108,10 +100,8 @@
 
         <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка данных...</div>
         
-        <!-- СЕТКА НОВОСТЕЙ -->
         <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
-        <!-- ТРИГГЕР ДЛЯ БЕСКОНЕЧНОЙ ПРОКРУТКИ -->
         <div id="scroll-trigger" class="h-20 flex items-center justify-center mt-8">
             <span id="scroll-loader" class="text-muted code-font hidden">Подгружаем еще...</span>
         </div>
@@ -125,47 +115,33 @@
         let currentLang = 'ru';
         let currentTheme = 'dark';
         
-        // Массивы для данных и прокрутки
         let allNewsItems = []; 
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
         const RENDER_BATCH_SIZE = 9;
-        let currentFilter = 'all';
+        let fetchError = false; // Флаг ошибки, чтобы фильтры не ломали UI
 
         const dict = {
             ru: {
                 feedTitle: 'Лента новостей',
-                footer: `© ${new Date().getFullYear()} REALLY?. Работает на умных RSS-алгоритмах.`,
+                footer: `© ${new Date().getFullYear()} REALLY?. Работает на умных API-алгоритмах.`,
                 loading: 'Сбор свежих новостей со всего мира...',
                 readMore: 'Читать',
-                error: 'Не удалось загрузить ленту. Попробуйте обновить страницу.',
+                error: 'Не удалось загрузить ленту. Источники временно недоступны.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
                 empty: 'За этот период новостей пока нет.',
                 loadingMore: 'Подгружаем еще...'
             },
             en: {
                 feedTitle: 'News Feed',
-                footer: `© ${new Date().getFullYear()} REALLY?. Powered by smart RSS algorithms.`,
+                footer: `© ${new Date().getFullYear()} REALLY?. Powered by smart API algorithms.`,
                 loading: 'Gathering the latest world news...',
                 readMore: 'Read',
-                error: 'Failed to load feed. Please refresh the page.',
+                error: 'Failed to load feed. Sources are temporarily unavailable.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
                 empty: 'No news found for this period.',
                 loadingMore: 'Loading more...'
             }
-        };
-
-        const RSS_SOURCES = {
-            ru: [
-                'https://www.ixbt.com/export/news.rss',
-                'https://3dnews.ru/news/rss/',
-                'https://hi-tech.mail.ru/rss/all/'
-            ],
-            en: [
-                'https://techcrunch.com/feed/',
-                'https://www.theverge.com/rss/index.xml',
-                'https://www.engadget.com/rss.xml'
-            ]
         };
 
         function toggleTheme() {
@@ -218,33 +194,36 @@
             }
         }
 
-        // Парсинг дат и присвоение категорий (сегодня/вчера)
+        // Безопасный парсинг дат (не дает сбоев при кривых данных)
         function parseAndFormatDate(dateString) {
-            const date = new Date(dateString);
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+            try {
+                let safeDateString = (dateString || "").replace(" ", "T");
+                const date = new Date(safeDateString);
+                
+                if (isNaN(date.getTime())) {
+                    return { label: "Недавно", category: 'today', timestamp: Date.now() };
+                }
 
-            const isToday = date.toDateString() === today.toDateString();
-            const isYesterday = date.toDateString() === yesterday.toDateString();
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
 
-            const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            let category = 'older';
-            let label = `${date.toLocaleDateString()} в ${time}`;
+                const isToday = date.toDateString() === today.toDateString();
+                const isYesterday = date.toDateString() === yesterday.toDateString();
 
-            if (isToday) {
-                category = 'today';
-                label = `${dict[currentLang].filterToday}, ${time}`;
-            } else if (isYesterday) {
-                category = 'yesterday';
-                label = `${dict[currentLang].filterYesterday}, ${time}`;
+                const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                if (isToday) return { label: `${dict[currentLang].filterToday}, ${time}`, category: 'today', timestamp: date.getTime() };
+                if (isYesterday) return { label: `${dict[currentLang].filterYesterday}, ${time}`, category: 'yesterday', timestamp: date.getTime() };
+                
+                return { label: `${date.toLocaleDateString()} в ${time}`, category: 'older', timestamp: date.getTime() };
+            } catch (e) {
+                return { label: "Недавно", category: 'today', timestamp: Date.now() };
             }
-
-            return { label, category, timestamp: date.getTime() };
         }
 
         async function fetchNews() {
+            fetchError = false;
             document.getElementById('loader-list').classList.remove('hidden');
             document.getElementById('loader-list').innerText = dict[currentLang].loading;
             document.getElementById('news-grid').innerHTML = '';
@@ -252,66 +231,88 @@
             allNewsItems = [];
 
             try {
-                // Запускаем параллельный сбор данных из 3 лент сразу
-                const urls = RSS_SOURCES[currentLang];
-                const fetchPromises = urls.map(feedUrl => {
-                    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=20`;
-                    return fetch(apiUrl).then(res => res.json()).catch(() => null);
-                });
+                // ПЕРВИЧНЫЙ ИСТОЧНИК: Стабильный NewsAPI 
+                const primaryUrl = currentLang === 'ru' 
+                    ? 'https://saurav.tech/NewsAPI/top-headlines/category/technology/ru.json'
+                    : 'https://saurav.tech/NewsAPI/top-headlines/category/technology/us.json';
+                
+                let isPrimarySuccess = false;
+                
+                try {
+                    const res = await fetch(primaryUrl);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'ok' && data.articles && data.articles.length > 0) {
+                            data.articles.forEach(item => {
+                                allNewsItems.push({
+                                    title: item.title,
+                                    link: item.url,
+                                    desc: item.description ? item.description.substring(0, 110) + '...' : 'Подробности читайте на источнике.',
+                                    img: item.urlToImage || "",
+                                    pubDate: item.publishedAt
+                                });
+                            });
+                            isPrimarySuccess = true;
+                        }
+                    }
+                } catch (e) { console.warn("Primary API failed, switching to Fallback."); }
 
-                const results = await Promise.all(fetchPromises);
-
-                results.forEach(data => {
-                    if (data && data.status === 'ok' && data.items) {
-                        data.items.forEach(item => {
-                            // Очистка текста
-                            let cleanDesc = (item.description || item.content || "").replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
-                            cleanDesc = cleanDesc.substring(0, 110).trim() + '...';
-
-                            // Поиск картинки
+                // РЕЗЕРВНЫЙ ИСТОЧНИК: Если первый упал, тянем RSS
+                if (!isPrimarySuccess || allNewsItems.length === 0) {
+                    const fallbackUrl = currentLang === 'ru'
+                        ? 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.ixbt.com%2Fexport%2Fnews.rss'
+                        : 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftechcrunch.com%2Ffeed%2F';
+                    
+                    const resFb = await fetch(fallbackUrl);
+                    const dataFb = await resFb.json();
+                    
+                    if (dataFb.status === 'ok' && dataFb.items) {
+                        dataFb.items.forEach(item => {
                             let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
                             if (!imgUrl) {
                                 const match = (item.content || item.description || "").match(/<img[^>]+src="([^">]+)"/);
                                 if (match) imgUrl = match[1];
                             }
-
-                            const dateInfo = parseAndFormatDate(item.pubDate);
-
+                            let cleanDesc = (item.description || item.content || "").replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ');
                             allNewsItems.push({
                                 title: item.title,
                                 link: item.link,
-                                desc: cleanDesc,
+                                desc: cleanDesc.substring(0, 110) + '...',
                                 img: imgUrl,
-                                dateLabel: dateInfo.label,
-                                category: dateInfo.category,
-                                timestamp: dateInfo.timestamp
+                                pubDate: item.pubDate
                             });
                         });
                     }
+                }
+
+                if (allNewsItems.length === 0) throw new Error("Нет данных из обоих источников");
+
+                // Присваиваем категории и сортируем по времени
+                allNewsItems.forEach(item => {
+                    const dateInfo = parseAndFormatDate(item.pubDate);
+                    item.dateLabel = dateInfo.label;
+                    item.category = dateInfo.category;
+                    item.timestamp = dateInfo.timestamp;
                 });
 
-                if (allNewsItems.length === 0) throw new Error("Нет данных");
-
-                // Сортировка от новых к старым
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                
-                // Применяем фильтр и начинаем рендер
                 applyFilter('all');
 
             } catch (error) {
-                console.error("Ошибка:", error);
+                console.error("Fetch Error:", error);
+                fetchError = true;
+                document.getElementById('loader-list').classList.remove('hidden');
                 document.getElementById('loader-list').innerText = dict[currentLang].error;
             }
         }
 
         function applyFilter(filterType) {
-            currentFilter = filterType;
-            
-            // Обновляем UI кнопок фильтра
+            // Блокируем фильтрацию, если произошла ошибка загрузки
+            if (fetchError || allNewsItems.length === 0) return; 
+
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${filterType}`).classList.add('active');
 
-            // Фильтруем массив
             if (filterType === 'all') {
                 filteredNewsItems = [...allNewsItems];
             } else {
@@ -331,7 +332,6 @@
             renderNextBatch();
         }
 
-        // Рендер порции новостей (для бесконечной прокрутки)
         function renderNextBatch() {
             if (currentRenderIndex >= filteredNewsItems.length) {
                 document.getElementById('scroll-loader').classList.add('hidden');
@@ -339,7 +339,6 @@
             }
 
             document.getElementById('scroll-loader').classList.remove('hidden');
-
             const grid = document.getElementById('news-grid');
             const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
             
@@ -354,7 +353,7 @@
                         <a href="${news.link}" target="_blank" class="flex flex-col h-full cursor-pointer outline-none block">
                             <div class="h-48 overflow-hidden border-b border-custom relative">
                                 ${imgBlock}
-                                <div class="absolute top-3 left-3 bg-[#0a1128]/80 backdrop-blur-sm border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)]">
+                                <div class="absolute top-3 left-3 bg-black/70 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-white shadow-lg">
                                     ${news.dateLabel}
                                 </div>
                             </div>
@@ -372,19 +371,15 @@
             });
 
             currentRenderIndex += RENDER_BATCH_SIZE;
-
             if (currentRenderIndex >= filteredNewsItems.length) {
                 document.getElementById('scroll-loader').classList.add('hidden');
             }
         }
 
-        // Инициализация Наблюдателя для бесконечной прокрутки (Intersection Observer)
         function setupScrollObserver() {
             const trigger = document.getElementById('scroll-trigger');
             const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) {
-                    renderNextBatch();
-                }
+                if (entries[0].isIntersecting) renderNextBatch();
             }, { rootMargin: "150px" });
             observer.observe(trigger);
         }
