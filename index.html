@@ -179,8 +179,8 @@
 
         function parseAndFormatDate(dateString) {
             try {
-                let safeDateString = (dateString || "").replace(" ", "T");
-                const date = new Date(safeDateString);
+                // Исправлено: убрали ломающий replace, теперь штатный Date читает RSS как положено
+                const date = new Date(dateString || Date.now());
                 if (isNaN(date.getTime())) return { label: "Только что", category: 'today', timestamp: Date.now() };
 
                 const today = new Date();
@@ -241,7 +241,7 @@
             allNewsItems = [];
 
             try {
-                // МАГИЯ ЗДЕСЬ: Мы обращаемся к НАШЕМУ серверу (файлу api/news.js)
+                // Связь с твоим сервером api/news.js
                 const res = await fetch(`/api/news?lang=${currentLang}`);
                 const xmlText = await res.text();
                 
