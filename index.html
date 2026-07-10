@@ -110,6 +110,24 @@
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
         const RENDER_BATCH_SIZE = 9;
+        const NEWS_CACHE_PREFIX = 'really_news_cache_v2_';
+        const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
+        const TECH_KEYWORDS = {
+            ru: [
+                'технолог', 'техно', 'смартфон', 'телефон', 'планшет', 'ноутбук', 'лэптоп', 'пк', 'компьютер',
+                'процессор', 'чип', 'видеокарт', 'gpu', 'cpu', 'npu', 'ai', 'ии', 'искусствен', 'нейросет',
+                'vr', 'ar', 'xr', 'очки', 'гарнитур', 'шлем', 'телевизор', 'tv', 'монитор', 'камера',
+                'дрон', 'робот', 'робототех', 'гаджет', 'наушник', 'смарт', 'умн', 'консоль', 'игров',
+                'android', 'ios', 'apple', 'samsung', 'xiaomi', 'google', 'meta', 'nvidia', 'amd', 'intel', 'qualcomm'
+            ],
+            en: [
+                'tech', 'technology', 'gadget', 'device', 'smartphone', 'phone', 'tablet', 'laptop', 'notebook', 'pc',
+                'computer', 'processor', 'chip', 'chipset', 'gpu', 'cpu', 'npu', 'semiconductor', 'ai', 'artificial intelligence',
+                'vr', 'ar', 'xr', 'headset', 'glasses', 'smart glasses', 'tv', 'television', 'display', 'monitor',
+                'drone', 'robot', 'robotics', 'camera', 'earbuds', 'wearable', 'smartwatch', 'console', 'gaming',
+                'android', 'ios', 'apple', 'samsung', 'xiaomi', 'google', 'meta', 'nvidia', 'amd', 'intel', 'qualcomm'
+            ]
+        };
 
         const dict = {
             ru: {
@@ -176,14 +194,26 @@
             document.getElementById('filter-yesterday').innerText = t.filterYesterday;
             
             const loadBtn = document.getElementById('btn-load-more');
-            if(loadBtn.innerText !== dict['ru'].noMoreNews && loadBtn.innerText !== dict['en'].noMoreNews) {
+            if (loadBtn.disabled) {
+                loadBtn.innerText = t.noMoreNews;
+            } else {
                 loadBtn.innerText = t.btnLoadMore;
             }
         }
 
         function handleImageError(imgElement) {
+            const proxySrc = imgElement.getAttribute('data-proxy-src');
+            const triedProxy = imgElement.getAttribute('data-proxy-tried') === '1';
+
+            // Сначала пробуем прямую ссылку, при ошибке делаем одну попытку через наш прокси.
+            if (!triedProxy && proxySrc) {
+                imgElement.setAttribute('data-proxy-tried', '1');
+                imgElement.src = proxySrc;
+                return;
+            }
+
             imgElement.style.display = 'none';
-            if(imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
+            if (imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
         }
 
         function parseAndFormatDate(dateString) {
@@ -212,48 +242,142 @@
             }
         }
 
-        // Универсальный парсер, который понимает и RSS (iXBT) и Atom (The Verge)
+        function decodeHtmlEntities(value) {
+            const txt = document.createElement('textarea');
+            txt.innerHTML = String(value || '');
+            return txt.value;
+        }
+
+        function normalizeFeedUrl(url) {
+            return decodeHtmlEntities(String(url || '').trim()).replace(/&amp;/gi, '&');
+        }
+
+        function safeAbsoluteUrl(url, fallback = '') {
+            try {
+                return new URL(String(url || '').trim()).href;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function buildImageProxySrc(url) {
+            const normalized = safeAbsoluteUrl(url, '');
+            if (!normalized) return '';
+            return `/api/image?url=${encodeURIComponent(normalized)}`;
+        }
+
+        function getCachedNews(lang) {
+            try {
+                const raw = localStorage.getItem(`${NEWS_CACHE_PREFIX}${lang}`);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.items) || typeof parsed.ts !== 'number') return null;
+                if (Date.now() - parsed.ts > NEWS_CACHE_TTL_MS) return null;
+                return parsed.items;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function setCachedNews(lang, items) {
+            try {
+                localStorage.setItem(`${NEWS_CACHE_PREFIX}${lang}`, JSON.stringify({ ts: Date.now(), items }));
+            } catch (e) {
+                // Игнорируем ошибки localStorage (private mode / quota exceeded).
+            }
+        }
+
+        function isTechNewsItem(item) {
+            const text = `${item.title || ''} ${item.desc || ''}`.toLowerCase();
+            const keywords = currentLang === 'ru' ? TECH_KEYWORDS.ru : TECH_KEYWORDS.en;
+            return keywords.some(keyword => text.includes(keyword));
+        }
+
+        // Универсальный парсер на базе нативного DOMParser для безопасного и точного чтения RSS (iXBT) и Atom (The Verge)
         function parseXML(xmlStr) {
             const items = [];
-            // Ищем теги <item> (для RU) или <entry> (для EN)
-            const itemRegex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
-            let match;
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlStr, "application/xml");
+            const nodes = xmlDoc.querySelectorAll("item, entry");
             
-            while ((match = itemRegex.exec(xmlStr)) !== null) {
-                const itemStr = match[1];
-                
+            nodes.forEach(node => {
+                if (items.length >= 24) return;
+
                 // Заголовок
-                const titleMatch = itemStr.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
-                const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : "Без названия";
+                const titleNode = node.querySelector("title");
+                const title = titleNode ? titleNode.textContent.trim() : "Без названия";
                 
-                // Ссылка (работает и с <link>URL</link> и с <link href="URL"/>)
+                // Ссылка
                 let link = "#";
-                const linkMatchAtom = itemStr.match(/<link[^>]*href=["']([^"']+)["']/i);
-                const linkMatchRSS = itemStr.match(/<link>(.*?)<\/link>/i);
-                if (linkMatchRSS && !linkMatchRSS[1].includes("href=")) {
-                    link = linkMatchRSS[1].trim();
-                } else if (linkMatchAtom) {
-                    link = linkMatchAtom[1].trim();
+                const linkNodes = node.querySelectorAll("link");
+                for (let i = 0; i < linkNodes.length; i++) {
+                    const lNode = linkNodes[i];
+                    const href = lNode.getAttribute("href");
+                    if (href) {
+                        link = href.trim();
+                        break;
+                    } else if (lNode.textContent && lNode.textContent.trim().startsWith("http")) {
+                        link = lNode.textContent.trim();
+                        break;
+                    }
                 }
                 
-                // Дата (pubDate или published/updated)
-                const dateMatch = itemStr.match(/<(?:pubDate|published|updated)>(.*?)<\/(?:pubDate|published|updated)>/i);
-                const pubDate = dateMatch ? dateMatch[1].trim() : "";
-                
-                // Картинка (ищет вообще любые картинки внутри новости)
-                let imgUrl = "";
-                const imgMatch = itemStr.match(/<img[^>]*\bsrc=["']([^"']+)["']/i);
-                const mediaMatch = itemStr.match(/<media:(?:content|thumbnail)[^>]*\burl=["']([^"']+)["']/i);
-                const encMatch = itemStr.match(/<enclosure[^>]*\burl=["']([^"']+)["']/i);
-                
-                if (imgMatch) imgUrl = imgMatch[1];
-                else if (mediaMatch) imgUrl = mediaMatch[1];
-                else if (encMatch) imgUrl = encMatch[1];
+                // Валидация URL
+                try {
+                    link = new URL(link).href;
+                } catch (e) {
+                    link = "#";
+                }
 
-                // Описание (description, content или summary)
-                const descMatch = itemStr.match(/<(?:description|content|summary)[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/(?:description|content|summary)>/i);
-                let rawDesc = descMatch ? descMatch[1] : "";
+                // Дата
+                const dateNode = node.querySelector("pubDate, published, updated");
+                const pubDate = dateNode ? dateNode.textContent.trim() : "";
                 
+                // Картинка
+                let imgUrl = "";
+                const enclosureNode = node.querySelector("enclosure[url]");
+                const mediaNode = node.querySelector("content[url], thumbnail[url], media\\:content[url], media\\:thumbnail[url]");
+                
+                if (enclosureNode) {
+                    imgUrl = enclosureNode.getAttribute("url");
+                } else if (mediaNode) {
+                    imgUrl = mediaNode.getAttribute("url");
+                }
+
+                // Фолбэк для XML namespace media:* (часто встречается в EN-лентах)
+                if (!imgUrl) {
+                    const mediaContentNodes = node.getElementsByTagNameNS('*', 'content');
+                    for (let i = 0; i < mediaContentNodes.length; i++) {
+                        const candidate = mediaContentNodes[i].getAttribute('url');
+                        if (candidate) {
+                            imgUrl = candidate;
+                            break;
+                        }
+                    }
+                }
+
+                if (!imgUrl) {
+                    const mediaThumbNodes = node.getElementsByTagNameNS('*', 'thumbnail');
+                    for (let i = 0; i < mediaThumbNodes.length; i++) {
+                        const candidate = mediaThumbNodes[i].getAttribute('url');
+                        if (candidate) {
+                            imgUrl = candidate;
+                            break;
+                        }
+                    }
+                }
+
+                // Если в атрибутах нет, ищем в HTML-контенте или описании
+                const descNode = node.querySelector("description, content, summary");
+                const rawDesc = descNode ? descNode.textContent : "";
+                
+                if (!imgUrl && rawDesc) {
+                    const imgMatch = rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (imgMatch) imgUrl = imgMatch[1];
+                }
+
+                imgUrl = normalizeFeedUrl(imgUrl);
+
                 const tmp = document.createElement("div");
                 tmp.innerHTML = rawDesc;
                 let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
@@ -262,12 +386,11 @@
                     title: title,
                     link: link,
                     desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
-                    img: imgUrl.replace(/&amp;/g, '&'),
+                    img: safeAbsoluteUrl(imgUrl, ''),
                     pubDate: pubDate
                 });
-                
-                if (items.length >= 40) break; 
-            }
+            });
+
             return items;
         }
 
@@ -278,14 +401,21 @@
             document.getElementById('load-more-container').classList.add('hidden');
             allNewsItems = [];
 
+            const cachedItems = getCachedNews(currentLang);
+            if (cachedItems && cachedItems.length > 0) {
+                allNewsItems = [...cachedItems].sort((a, b) => b.timestamp - a.timestamp);
+                applyFilter('all');
+                return;
+            }
+
             try {
                 // Запрашиваем наш бэкенд
-                const res = await fetch(`/api/news?lang=${currentLang}&t=${Date.now()}`);
+                const res = await fetch(`/api/news?lang=${currentLang}`);
                 const xmlText = await res.text();
                 
                 if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
 
-                const rawItems = parseXML(xmlText);
+                const rawItems = parseXML(xmlText).filter(isTechNewsItem);
 
                 rawItems.forEach(item => {
                     const dateInfo = parseAndFormatDate(item.pubDate);
@@ -295,6 +425,7 @@
                 if (allNewsItems.length === 0) throw new Error("Лента пуста");
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
+                setCachedNews(currentLang, allNewsItems);
                 applyFilter('all');
 
             } catch (error) {
@@ -329,6 +460,10 @@
             renderNextBatch();
         }
 
+        function escapeHTML(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
         function renderNextBatch() {
             if (currentRenderIndex >= filteredNewsItems.length) return;
 
@@ -336,23 +471,32 @@
             const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
             
             batch.forEach((news, i) => {
-                const imgBlock = news.img 
-                    ? `<img src="${news.img}" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                       <div class="w-full h-full placeholder-bg items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase" style="display:none;">[ NO PHOTO ]</div>`
-                    : `<div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
+                const safeTitle = escapeHTML(news.title);
+                const safeDesc = escapeHTML(news.desc);
+                const safeDateLabel = escapeHTML(news.dateLabel);
+                const safeLink = safeAbsoluteUrl(news.link, '#');
+                const directImg = safeAbsoluteUrl(news.img, '');
+                const proxyImg = buildImageProxySrc(news.img);
+                const safeImg = escapeHTML(directImg);
+                const safeProxyImg = escapeHTML(proxyImg);
 
-                grid.innerHTML += `
+                const imgBlock = safeImg 
+                    ? `<img src="${safeImg}" data-proxy-src="${safeProxyImg}" data-proxy-tried="0" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                       <div class="absolute inset-0 placeholder-bg items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase" style="display:none;">[ NO PHOTO ]</div>`
+                    : `<div class="absolute inset-0 placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
+
+                const cardHtml = `
                     <article class="tech-card app-card rounded-2xl overflow-hidden group" style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms">
-                        <a href="${news.link}" target="_blank" class="flex flex-col h-full cursor-pointer outline-none block">
+                        <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="flex flex-col h-full cursor-pointer outline-none block">
                             <div class="h-48 overflow-hidden border-b border-custom relative">
                                 ${imgBlock}
                                 <div class="absolute top-3 left-3 bg-[#0a1128]/90 backdrop-blur-md border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)] shadow-lg">
-                                    ${news.dateLabel}
+                                    ${safeDateLabel}
                                 </div>
                             </div>
                             <div class="p-6 space-y-3 flex-grow">
-                                <h3 class="text-base font-bold leading-snug group-hover:text-[var(--text-muted)] transition-colors">${news.title}</h3>
-                                <p class="text-sm text-muted leading-relaxed">${news.desc}</p>
+                                <h3 class="text-base font-bold leading-snug group-hover:text-[var(--text-muted)] transition-colors">${safeTitle}</h3>
+                                <p class="text-sm text-muted leading-relaxed">${safeDesc}</p>
                             </div>
                             <div class="p-6 pt-0 flex items-center justify-between text-xs border-t border-custom/30 mt-4 pt-4">
                                 <span class="text-muted code-font">REALLY? NEWS</span>
@@ -361,6 +505,7 @@
                         </a>
                     </article>
                 `;
+                grid.insertAdjacentHTML('beforeend', cardHtml);
             });
 
             currentRenderIndex += RENDER_BATCH_SIZE;
