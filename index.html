@@ -4,179 +4,384 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { --bg-color: #0a1128; --card-bg: #001f54; --card-border: #034078; --accent: #034078; --text-main: #dce1de; --text-muted: rgba(220, 225, 222, 0.65); --glow: rgba(3, 64, 120, 0.4); --btn-text: #dce1de; }
-        body.theme-light { --bg-color: #1f2421; --card-bg: rgba(33, 104, 105, 0.2); --card-border: #216869; --accent: #49a078; --text-main: #dce1de; --text-muted: #9cc5a1; --glow: rgba(73, 160, 120, 0.4); --btn-text: #1f2421; }
-        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.4s ease; }
+        :root {
+            --bg-color: #0a1128;
+            --card-bg: #001f54;
+            --card-border: #034078;
+            --accent: #034078;
+            --text-main: #dce1de;
+            --text-muted: rgba(220, 225, 222, 0.65); 
+            --glow: rgba(3, 64, 120, 0.4);
+            --btn-text: #dce1de;
+        }
+
+        body.theme-light {
+            --bg-color: #1f2421;
+            --card-bg: rgba(33, 104, 105, 0.2);
+            --card-border: #216869;
+            --accent: #49a078;
+            --text-main: #dce1de;
+            --text-muted: #9cc5a1;
+            --glow: rgba(73, 160, 120, 0.4);
+            --btn-text: #1f2421;
+        }
+
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.4s ease, color 0.4s ease; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+        
+        .app-navbar { background-color: var(--bg-color); border-bottom: 1px solid var(--card-border); opacity: 0.98; }
         .app-card { background-color: var(--card-bg); border: 1px solid var(--card-border); transition: all 0.3s ease; }
-        .app-card:hover { border-color: var(--text-muted); box-shadow: 0 15px 30px -10px var(--glow); }
-        .filter-btn { border: 1px solid var(--card-border); color: var(--text-muted); padding: 8px 18px; border-radius: 99px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .app-card:hover { border-color: var(--text-muted); box-shadow: 0 15px 30px -10px var(--glow); transform: translateY(-4px); }
+        
+        .text-accent { color: var(--text-main); font-weight: 800; text-shadow: 0 0 10px var(--glow); }
+        .text-muted { color: var(--text-muted); }
+        .bg-accent { background-color: var(--accent); color: var(--btn-text); }
+        .border-custom { border-color: var(--card-border); }
+        
+        .filter-btn { border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; }
+        .filter-btn:hover { border-color: var(--text-main); color: var(--text-main); }
         .filter-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--btn-text); }
-        .hero-slide { transition: opacity 0.6s ease-in-out; }
+
+        .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
+        .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
+        
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen"> 
 
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-[var(--bg-color)]/90 border-b border-[var(--card-border)]">
-        <div class="max-w-7xl px-6 mx-auto h-20 flex items-center justify-between">
-            <a href="#" class="flex items-center space-x-2" onclick="location.reload()">
-                <div class="w-10 h-10 bg-[var(--accent)] rounded-xl flex items-center justify-center font-bold">?</div>
-                <span class="text-2xl font-extrabold">REALLY<span class="text-[var(--accent)]">?</span></span>
+    <header class="sticky top-0 z-50 backdrop-blur-md app-navbar">
+        <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
+            <a href="#" class="flex items-center space-x-2 group" onclick="location.reload()">
+                <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+                    <span class="code-font font-bold text-xl text-[var(--btn-text)]">?</span>
+                </div>
+                <span class="text-2xl font-extrabold tracking-tight">REALLY<span class="text-accent">?</span></span>
             </a>
+            
             <div class="flex items-center space-x-3">
-                <button onclick="changeLanguage('ru')" id="btn-ru" class="px-3 py-1 rounded-lg text-xs font-bold bg-[var(--accent)]">RU</button>
-                <button onclick="changeLanguage('en')" id="btn-en" class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400">EN</button>
+                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all" id="theme-toggle-btn">🌙</button>
+                <div class="app-card rounded-xl p-1 flex">
+                    <button id="btn-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent">RU</button>
+                    <button id="btn-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent">EN</button>
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl px-6 mx-auto py-8">
-        <div id="loader" class="text-center py-20">Загрузка...</div>
-
-        <!-- HERO -->
-        <section id="hero-section" class="mb-12 relative w-full h-[450px] rounded-3xl overflow-hidden hidden shadow-2xl border border-[var(--card-border)]">
-            <div id="hero-slides" class="relative w-full h-full"></div>
-            <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20" id="hero-dots"></div>
-        </section>
-
-        <!-- FILTERS -->
-        <div id="content-section" class="hidden space-y-6">
-            <div class="flex flex-wrap gap-2" id="time-filters">
-                <button onclick="setFilter('time', 'all')" class="filter-btn active" id="time-all">Все</button>
-                <button onclick="setFilter('time', 'today')" class="filter-btn" id="time-today">Сегодня</button>
-                <button onclick="setFilter('time', 'yesterday')" class="filter-btn" id="time-yesterday">Вчера</button>
+    <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight flex items-center gap-2">
+                <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
+            </h2>
+            
+            <div class="flex space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide" id="filters-container">
+                <button onclick="applyFilter('all')" id="filter-all" class="filter-btn active">Все</button>
+                <button onclick="applyFilter('today')" id="filter-today" class="filter-btn">Сегодня</button>
+                <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn">Вчера</button>
             </div>
-            <div class="flex flex-wrap gap-2" id="cat-filters">
-                <button onclick="setFilter('cat', 'all')" class="filter-btn active" id="cat-all">Все</button>
-                <button onclick="setFilter('cat', 'ai')" class="filter-btn" id="cat-ai">ИИ</button>
-                <button onclick="setFilter('cat', 'gadgets')" class="filter-btn" id="cat-gadgets">Гаджеты</button>
-                <button onclick="setFilter('cat', 'software')" class="filter-btn" id="cat-software">Софт</button>
-                <button onclick="setFilter('cat', 'games')" class="filter-btn" id="cat-games">Игры</button>
-                <button onclick="setFilter('cat', 'business')" class="filter-btn" id="cat-business">Бизнес</button>
-            </div>
+        </div>
 
-            <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-            <div id="load-more-container" class="flex justify-center mt-12 hidden">
-                <button onclick="renderBatch()" id="btn-more" class="px-8 py-3 bg-[var(--accent)] rounded-xl font-bold">Показать еще ↓</button>
-            </div>
+        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка...</div>
+        
+        <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+
+        <div id="load-more-container" class="flex justify-center mt-12 mb-8 hidden">
+            <button onclick="renderNextBatch()" id="btn-load-more" class="app-card text-[var(--text-main)] font-bold px-8 py-3 rounded-xl hover:bg-[var(--accent)] hover:text-[var(--btn-text)] transition-all outline-none cursor-pointer border border-custom shadow-lg">
+                Показать еще ↓
+            </button>
         </div>
     </main>
 
-    <script>
-        let allNews = [], filteredNews = [], currentLang = 'ru', currentStep = 0, heroIdx = 0, timeF = 'all', catF = 'all';
-        const STEP = 9;
+    <footer class="border-t border-custom mt-12 text-muted text-sm py-8 text-center">
+        <p id="txt-footer"></p>
+    </footer>
 
-        const cats = {
-            ai: ['ai', 'ии', 'нейросеть', 'gpt', 'llm', 'gemini', 'openai'],
-            gadgets: ['smartphone', 'phone', 'iphone', 'samsung', 'ноутбук', 'laptop', 'macbook', 'gadget'],
-            software: ['софт', 'software', 'app', 'ios', 'android', 'windows'],
-            games: ['game', 'игра', 'игры', 'playstation', 'xbox', 'steam', 'gta'],
-            business: ['бизнес', 'business', 'crypto', 'крипта', 'startup', 'стартап', 'ipo']
+    <script>
+        let currentLang = 'ru';
+        let currentTheme = 'dark';
+        
+        let allNewsItems = []; 
+        let filteredNewsItems = [];
+        let currentRenderIndex = 0;
+        const RENDER_BATCH_SIZE = 9;
+
+        const dict = {
+            ru: {
+                feedTitle: 'Лента новостей',
+                footer: `© ${new Date().getFullYear()} REALLY?. Собственный сервер API.`,
+                loading: 'Загрузка...',
+                readMore: 'Читать',
+                error: 'Ошибка загрузки. Обновите страницу.',
+                filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
+                empty: 'За этот период новостей пока нет.',
+                btnLoadMore: 'Показать еще ↓',
+                noMoreNews: 'На сегодня новостей больше нет'
+            },
+            en: {
+                feedTitle: 'News Feed',
+                footer: `© ${new Date().getFullYear()} REALLY?. Custom API Server.`,
+                loading: 'Loading...',
+                readMore: 'Read',
+                error: 'Loading error. Please refresh.',
+                filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
+                empty: 'No news found for this period.',
+                btnLoadMore: 'Load more ↓',
+                noMoreNews: 'No more news for today'
+            }
         };
 
-        async function fetchNews() {
-            try {
-                const res = await fetch(`/api/news?lang=${currentLang}&t=${Date.now()}`);
-                const xml = await res.text();
-                const items = [];
-                const regex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
-                let match;
-                while ((match = regex.exec(xml)) !== null) {
-                    const s = match[1];
-                    const title = (s.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i) || [])[1]?.replace(/<[^>]+>/g, '').trim() || "Без названия";
-                    const link = (s.match(/<link[^>]*href=["']([^"']+)["']/i) || s.match(/<link>(.*?)<\/link>/i) || [])[1] || "#";
-                    const img = (s.match(/<media:(?:content|thumbnail)[^>]*\burl=["']([^"']+)["']/i) || s.match(/<img[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || "";
-                    const date = new Date((s.match(/<(?:pubDate|published|updated)>(.*?)<\/(?:pubDate|published|updated)>/i) || [])[1] || Date.now());
-                    
-                    items.push({ 
-                        title, link, img, date, 
-                        dateStr: date.toLocaleDateString(),
-                        timeCat: (new Date().toDateString() === date.toDateString() ? 'today' : 'yesterday'), 
-                        search: (title + s).toLowerCase() 
-                    });
-                }
-                allNews = items.sort((a, b) => b.date - a.date);
-                initUI();
-            } catch(e) { document.getElementById('loader').innerText = "Ошибка загрузки"; }
-        }
-
-        function initUI() {
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('hero-section').classList.remove('hidden');
-            document.getElementById('content-section').classList.remove('hidden');
-            renderHero();
-            applyFilters();
-        }
-
-        function renderHero() {
-            const cont = document.getElementById('hero-slides');
-            const dots = document.getElementById('hero-dots');
-            allNews.slice(0, 5).forEach((n, i) => {
-                cont.innerHTML += `<a href="${n.link}" target="_blank" class="hero-slide ${i===0?'active':'inactive'} absolute w-full h-full bg-cover bg-center cursor-pointer block" style="background-image:url('${n.img}')">
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#0a1128] to-transparent flex items-end p-12">
-                        <div><span class="bg-[var(--accent)] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Топ новость</span><h2 class="text-3xl font-black text-white mt-2">${n.title}</h2></div>
-                    </div>
-                </a>`;
-                dots.innerHTML += `<button onclick="heroIdx=${i}; updateHero();" class="w-3 h-3 rounded-full bg-white/50"></button>`;
-            });
-            setInterval(() => { heroIdx = (heroIdx + 1) % 5; updateHero(); }, 5000);
-        }
-
-        function updateHero() {
-            document.querySelectorAll('.hero-slide').forEach((s, i) => s.classList.toggle('active', i === heroIdx));
-            document.querySelectorAll('.hero-slide').forEach((s, i) => s.classList.toggle('inactive', i !== heroIdx));
-        }
-
-        function setFilter(type, val) {
-            if(type === 'time') timeF = val; else catF = val;
-            applyFilters();
-        }
-
-        function applyFilters() {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`time-${timeF}`).classList.add('active');
-            document.getElementById(`cat-${catF}`).classList.add('active');
-            
-            filteredNews = allNews.filter(n => {
-                const t = (timeF === 'all' || n.timeCat === timeF);
-                const c = (catF === 'all' || (cats[catF] && cats[catF].some(k => n.search.includes(k))));
-                return t && c;
-            });
-            currentStep = 0;
-            document.getElementById('news-grid').innerHTML = '';
-            renderBatch();
-        }
-
-        function renderBatch() {
-            const grid = document.getElementById('news-grid');
-            const batch = filteredNews.slice(currentStep, currentStep + STEP);
-            batch.forEach(n => {
-                grid.innerHTML += `<article class="app-card rounded-2xl overflow-hidden" onclick="window.open('${n.link}', '_blank')">
-                    <div class="h-48 bg-gray-800">${n.img ? `<img src="${n.img}" class="w-full h-full object-cover">` : ''}</div>
-                    <div class="p-6 cursor-pointer">
-                        <span class="text-xs text-gray-400 font-mono">${n.dateStr}</span>
-                        <h3 class="font-bold mt-2">${n.title}</h3>
-                    </div>
-                </article>`;
-            });
-            currentStep += STEP;
-            document.getElementById('load-more-container').classList.toggle('hidden', currentStep >= filteredNews.length);
-            const btn = document.getElementById('btn-more');
-            btn.innerText = (currentStep >= filteredNews.length) ? "Больше нет" : "Показать еще ↓";
-            btn.disabled = (currentStep >= filteredNews.length);
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('theme-toggle-btn');
+            if (currentTheme === 'dark') {
+                currentTheme = 'light';
+                body.classList.add('theme-light');
+                btn.innerText = '☀️';
+            } else {
+                currentTheme = 'dark';
+                body.classList.remove('theme-light');
+                btn.innerText = '🌙';
+            }
         }
 
         function changeLanguage(lang) {
+            if (currentLang === lang) return;
             currentLang = lang;
-            document.getElementById('btn-ru').classList.toggle('bg-[#034078]', lang==='ru');
-            document.getElementById('btn-en').classList.toggle('bg-[#034078]', lang==='en');
+            const btnRu = document.getElementById('btn-ru');
+            const btnEn = document.getElementById('btn-en');
+
+            if(lang === 'ru') {
+                btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
+                btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
+            } else {
+                btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
+                btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
+            }
+            updateTexts();
             fetchNews();
         }
 
-        window.onload = fetchNews;
+        function updateTexts() {
+            const t = dict[currentLang];
+            document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> ${t.feedTitle}`;
+            document.getElementById('txt-footer').innerText = t.footer;
+            document.getElementById('filter-all').innerText = t.filterAll;
+            document.getElementById('filter-today').innerText = t.filterToday;
+            document.getElementById('filter-yesterday').innerText = t.filterYesterday;
+            
+            const loadBtn = document.getElementById('btn-load-more');
+            if(loadBtn.innerText !== dict['ru'].noMoreNews && loadBtn.innerText !== dict['en'].noMoreNews) {
+                loadBtn.innerText = t.btnLoadMore;
+            }
+        }
+
+        function handleImageError(imgElement) {
+            imgElement.style.display = 'none';
+            if(imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
+        }
+
+        function parseAndFormatDate(dateString) {
+            try {
+                const date = new Date(dateString || Date.now());
+                if (isNaN(date.getTime())) return { label: "Только что", category: 'today', timestamp: Date.now() };
+
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                const isToday = date.toDateString() === today.toDateString();
+                const isYesterday = date.toDateString() === yesterday.toDateString();
+                
+                const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
+                const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: currentLang === 'en' };
+                const time = date.toLocaleTimeString(locale, timeOpts);
+                
+                if (isToday) return { label: `${dict[currentLang].filterToday}, ${time}`, category: 'today', timestamp: date.getTime() };
+                if (isYesterday) return { label: `${dict[currentLang].filterYesterday}, ${time}`, category: 'yesterday', timestamp: date.getTime() };
+                
+                const dateSeparator = currentLang === 'ru' ? 'в' : 'at';
+                return { label: `${date.toLocaleDateString(locale)} ${dateSeparator} ${time}`, category: 'older', timestamp: date.getTime() };
+            } catch (e) {
+                return { label: "Только что", category: 'today', timestamp: Date.now() };
+            }
+        }
+
+        // Универсальный парсер, который понимает и RSS (iXBT) и Atom (The Verge)
+        function parseXML(xmlStr) {
+            const items = [];
+            // Ищем теги <item> (для RU) или <entry> (для EN)
+            const itemRegex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
+            let match;
+            
+            while ((match = itemRegex.exec(xmlStr)) !== null) {
+                const itemStr = match[1];
+                
+                // Заголовок
+                const titleMatch = itemStr.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
+                const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : "Без названия";
+                
+                // Ссылка (работает и с <link>URL</link> и с <link href="URL"/>)
+                let link = "#";
+                const linkMatchAtom = itemStr.match(/<link[^>]*href=["']([^"']+)["']/i);
+                const linkMatchRSS = itemStr.match(/<link>(.*?)<\/link>/i);
+                if (linkMatchRSS && !linkMatchRSS[1].includes("href=")) {
+                    link = linkMatchRSS[1].trim();
+                } else if (linkMatchAtom) {
+                    link = linkMatchAtom[1].trim();
+                }
+                
+                // Дата (pubDate или published/updated)
+                const dateMatch = itemStr.match(/<(?:pubDate|published|updated)>(.*?)<\/(?:pubDate|published|updated)>/i);
+                const pubDate = dateMatch ? dateMatch[1].trim() : "";
+                
+                // Картинка (ищет вообще любые картинки внутри новости)
+                let imgUrl = "";
+                const imgMatch = itemStr.match(/<img[^>]*\bsrc=["']([^"']+)["']/i);
+                const mediaMatch = itemStr.match(/<media:(?:content|thumbnail)[^>]*\burl=["']([^"']+)["']/i);
+                const encMatch = itemStr.match(/<enclosure[^>]*\burl=["']([^"']+)["']/i);
+                
+                if (imgMatch) imgUrl = imgMatch[1];
+                else if (mediaMatch) imgUrl = mediaMatch[1];
+                else if (encMatch) imgUrl = encMatch[1];
+
+                // Описание (description, content или summary)
+                const descMatch = itemStr.match(/<(?:description|content|summary)[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/(?:description|content|summary)>/i);
+                let rawDesc = descMatch ? descMatch[1] : "";
+                
+                const tmp = document.createElement("div");
+                tmp.innerHTML = rawDesc;
+                let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
+
+                items.push({
+                    title: title,
+                    link: link,
+                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
+                    img: imgUrl.replace(/&amp;/g, '&'),
+                    pubDate: pubDate
+                });
+                
+                if (items.length >= 40) break; 
+            }
+            return items;
+        }
+
+        async function fetchNews() {
+            document.getElementById('loader-list').classList.remove('hidden');
+            document.getElementById('loader-list').innerText = dict[currentLang].loading;
+            document.getElementById('news-grid').innerHTML = '';
+            document.getElementById('load-more-container').classList.add('hidden');
+            allNewsItems = [];
+
+            try {
+                // Запрашиваем наш бэкенд
+                const res = await fetch(`/api/news?lang=${currentLang}&t=${Date.now()}`);
+                const xmlText = await res.text();
+                
+                if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
+
+                const rawItems = parseXML(xmlText);
+
+                rawItems.forEach(item => {
+                    const dateInfo = parseAndFormatDate(item.pubDate);
+                    allNewsItems.push({ ...item, dateLabel: dateInfo.label, category: dateInfo.category, timestamp: dateInfo.timestamp });
+                });
+
+                if (allNewsItems.length === 0) throw new Error("Лента пуста");
+
+                allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
+                applyFilter('all');
+
+            } catch (error) {
+                console.error("Критическая ошибка:", error);
+                document.getElementById('loader-list').classList.remove('hidden');
+                document.getElementById('loader-list').innerText = dict[currentLang].error;
+            }
+        }
+
+        function applyFilter(filterType) {
+            if (allNewsItems.length === 0) return; 
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`filter-${filterType}`).classList.add('active');
+
+            filteredNewsItems = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => item.category === filterType);
+
+            document.getElementById('loader-list').classList.add('hidden');
+            document.getElementById('news-grid').innerHTML = '';
+            currentRenderIndex = 0;
+
+            if (filteredNewsItems.length === 0) {
+                document.getElementById('loader-list').classList.remove('hidden');
+                document.getElementById('loader-list').innerText = dict[currentLang].empty;
+                document.getElementById('load-more-container').classList.add('hidden');
+                return;
+            }
+            
+            document.getElementById('btn-load-more').innerText = dict[currentLang].btnLoadMore;
+            document.getElementById('btn-load-more').disabled = false;
+            document.getElementById('btn-load-more').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            renderNextBatch();
+        }
+
+        function renderNextBatch() {
+            if (currentRenderIndex >= filteredNewsItems.length) return;
+
+            const grid = document.getElementById('news-grid');
+            const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
+            
+            batch.forEach((news, i) => {
+                const imgBlock = news.img 
+                    ? `<img src="${news.img}" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                       <div class="w-full h-full placeholder-bg items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase" style="display:none;">[ NO PHOTO ]</div>`
+                    : `<div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
+
+                grid.innerHTML += `
+                    <article class="tech-card app-card rounded-2xl overflow-hidden group" style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms">
+                        <a href="${news.link}" target="_blank" class="flex flex-col h-full cursor-pointer outline-none block">
+                            <div class="h-48 overflow-hidden border-b border-custom relative">
+                                ${imgBlock}
+                                <div class="absolute top-3 left-3 bg-[#0a1128]/90 backdrop-blur-md border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)] shadow-lg">
+                                    ${news.dateLabel}
+                                </div>
+                            </div>
+                            <div class="p-6 space-y-3 flex-grow">
+                                <h3 class="text-base font-bold leading-snug group-hover:text-[var(--text-muted)] transition-colors">${news.title}</h3>
+                                <p class="text-sm text-muted leading-relaxed">${news.desc}</p>
+                            </div>
+                            <div class="p-6 pt-0 flex items-center justify-between text-xs border-t border-custom/30 mt-4 pt-4">
+                                <span class="text-muted code-font">REALLY? NEWS</span>
+                                <span class="text-[var(--text-main)] font-bold flex items-center gap-1 bg-accent/20 px-3 py-1.5 rounded-lg group-hover:bg-accent group-hover:text-[var(--btn-text)] transition-colors">${dict[currentLang].readMore} →</span>
+                            </div>
+                        </a>
+                    </article>
+                `;
+            });
+
+            currentRenderIndex += RENDER_BATCH_SIZE;
+            
+            const loadContainer = document.getElementById('load-more-container');
+            const loadBtn = document.getElementById('btn-load-more');
+            
+            if (currentRenderIndex >= filteredNewsItems.length) {
+                loadContainer.classList.remove('hidden');
+                loadBtn.innerText = dict[currentLang].noMoreNews;
+                loadBtn.disabled = true;
+                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                loadContainer.classList.remove('hidden');
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTexts();
+            fetchNews();
+        });
     </script>
 </body>
 </html>
