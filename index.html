@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* НОЧНАЯ ТЕМА (Строго без зеленого) */
+        /* НОЧНАЯ ТЕМА */
         :root {
             --bg-color: #0a1128;
             --card-bg: #001f54;
@@ -54,8 +55,8 @@
         .filter-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--btn-text); }
 
         .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
-
         .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
+        
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -71,8 +72,7 @@
             </a>
             
             <div class="flex items-center space-x-3">
-                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all" id="theme-toggle-btn" title="Сменить тему">🌙</button>
-
+                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all" id="theme-toggle-btn">🌙</button>
                 <div class="app-card rounded-xl p-1 flex">
                     <button id="btn-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent">RU</button>
                     <button id="btn-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent">EN</button>
@@ -94,7 +94,7 @@
             </div>
         </div>
 
-        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Синхронизация свежих данных...</div>
+        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Защищенное подключение к серверам новостей...</div>
         
         <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
@@ -120,9 +120,9 @@
             ru: {
                 feedTitle: 'Лента новостей',
                 footer: `© ${new Date().getFullYear()} REALLY?. Только свежие факты.`,
-                loading: 'Получаем самые свежие новости...',
+                loading: 'Подключаемся к источникам...',
                 readMore: 'Читать',
-                error: 'Источники недоступны. Обновите страницу.',
+                error: 'Не удалось пробить блокировки серверов. Попробуйте обновить страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
                 empty: 'За выбранный период новостей пока нет.',
                 loadingMore: 'Подгружаем еще...'
@@ -130,9 +130,9 @@
             en: {
                 feedTitle: 'News Feed',
                 footer: `© ${new Date().getFullYear()} REALLY?. Only fresh facts.`,
-                loading: 'Fetching the latest live news...',
+                loading: 'Connecting to sources...',
                 readMore: 'Read',
-                error: 'Sources unavailable. Please refresh.',
+                error: 'Failed to bypass server blocks. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
                 empty: 'No news found for this period.',
                 loadingMore: 'Loading more...'
@@ -156,7 +156,6 @@
         function changeLanguage(lang) {
             if (currentLang === lang) return;
             currentLang = lang;
-
             const btnRu = document.getElementById('btn-ru');
             const btnEn = document.getElementById('btn-en');
 
@@ -167,7 +166,6 @@
                 btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
                 btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
             }
-
             updateTexts();
             fetchNews();
         }
@@ -184,21 +182,15 @@
 
         function handleImageError(imgElement) {
             imgElement.style.display = 'none';
-            if(imgElement.nextElementSibling) {
-                imgElement.nextElementSibling.style.display = 'flex';
-            }
+            if(imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
         }
 
-        // Жесткая привязка парсера к текущей реальной дате (чтобы 100% корректно фильтровал)
         function parseAndFormatDate(dateString) {
             try {
-                // Приводим дату к безопасному формату ISO, который понимают все браузеры
                 let safeDateString = (dateString || "").replace(" ", "T");
                 const date = new Date(safeDateString);
                 
-                if (isNaN(date.getTime())) {
-                    return { label: "Только что", category: 'today', timestamp: Date.now() };
-                }
+                if (isNaN(date.getTime())) return { label: "Только что", category: 'today', timestamp: Date.now() };
 
                 const today = new Date();
                 const yesterday = new Date(today);
@@ -206,7 +198,6 @@
 
                 const isToday = date.toDateString() === today.toDateString();
                 const isYesterday = date.toDateString() === yesterday.toDateString();
-
                 const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
                 if (isToday) return { label: `${dict[currentLang].filterToday}, ${time}`, category: 'today', timestamp: date.getTime() };
@@ -218,6 +209,68 @@
             }
         }
 
+        // Парсинг чистого XML (защита от ошибок JSON оберток)
+        function parseXML(xmlStr) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlStr, "text/xml");
+            const items = Array.from(doc.querySelectorAll("item")).slice(0, 40); // Берем 40 самых свежих
+            
+            return items.map(item => {
+                const title = item.querySelector("title")?.textContent || "Без названия";
+                const link = item.querySelector("link")?.textContent || "#";
+                let desc = item.querySelector("description")?.textContent || "";
+                let imgUrl = "";
+
+                const enclosure = item.querySelector("enclosure");
+                if (enclosure) imgUrl = enclosure.getAttribute("url");
+                
+                if (!imgUrl) {
+                    const media = item.getElementsByTagNameNS("*", "content")[0];
+                    if (media) imgUrl = media.getAttribute("url");
+                }
+                
+                if (!imgUrl) {
+                    const match = desc.match(/<img[^>]+src="([^">]+)"/);
+                    if (match) imgUrl = match[1];
+                }
+
+                let cleanDesc = desc.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
+
+                return {
+                    title: title,
+                    link: link,
+                    desc: cleanDesc.substring(0, 110) + '...',
+                    img: imgUrl,
+                    pubDate: item.querySelector("pubDate")?.textContent || ""
+                };
+            });
+        }
+
+        // Функция с тройной защитой (Fallbacks)
+        async function fetchWithProtection(targetUrl) {
+            // Список независимых публичных прокси серверов для обхода блокировок (CORS)
+            const proxies = [
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            ];
+
+            for (let i = 0; i < proxies.length; i++) {
+                try {
+                    const res = await fetch(proxies[i]);
+                    if (res.ok) {
+                        const xmlText = await res.text();
+                        if (xmlText.includes('<rss') || xmlText.includes('<feed')) {
+                            return parseXML(xmlText);
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Прокси ${i+1} недоступен, переключаемся на следующий...`);
+                }
+            }
+            throw new Error("Все каналы заблокированы");
+        }
+
         async function fetchNews() {
             document.getElementById('loader-list').classList.remove('hidden');
             document.getElementById('loader-list').innerText = dict[currentLang].loading;
@@ -226,50 +279,31 @@
             allNewsItems = [];
 
             try {
-                // ИСПОЛЬЗУЕМ ТОЛЬКО ЖИВЫЕ RSS КАНАЛЫ (Никаких старых API)
+                // Живые ленты новостей
                 const feedUrl = currentLang === 'ru' 
                     ? 'https://www.ixbt.com/export/news.rss'
                     : 'https://techcrunch.com/feed/';
 
-                // Ограничение в 30 свежих новостей, чтобы не перегружать 
-                const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=30`;
-                
-                const res = await fetch(url);
-                const data = await res.json();
+                const rawItems = await fetchWithProtection(feedUrl);
 
-                if (data.status === 'ok' && data.items && data.items.length > 0) {
-                    data.items.forEach(item => {
-                        let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
-                        if (!imgUrl) {
-                            const match = (item.content || item.description || "").match(/<img[^>]+src="([^">]+)"/);
-                            if (match) imgUrl = match[1];
-                        }
-                        
-                        let cleanDesc = (item.description || item.content || "").replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
-                        
-                        const dateInfo = parseAndFormatDate(item.pubDate);
-
-                        allNewsItems.push({
-                            title: item.title,
-                            link: item.link,
-                            desc: cleanDesc.substring(0, 110) + '...',
-                            img: imgUrl,
-                            dateLabel: dateInfo.label,
-                            category: dateInfo.category,
-                            timestamp: dateInfo.timestamp
-                        });
+                rawItems.forEach(item => {
+                    const dateInfo = parseAndFormatDate(item.pubDate);
+                    allNewsItems.push({
+                        ...item,
+                        dateLabel: dateInfo.label,
+                        category: dateInfo.category,
+                        timestamp: dateInfo.timestamp
                     });
-                } else {
-                    throw new Error("Пустая RSS лента");
-                }
+                });
 
-                // Сортировка - самые свежие сверху
+                if (allNewsItems.length === 0) throw new Error("Лента пуста");
+
+                // Сортируем: новые сверху
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                
                 applyFilter('all');
 
             } catch (error) {
-                console.error("Fetch Error:", error);
+                console.error("Критическая ошибка:", error);
                 document.getElementById('loader-list').classList.remove('hidden');
                 document.getElementById('loader-list').innerText = dict[currentLang].error;
             }
@@ -277,15 +311,12 @@
 
         function applyFilter(filterType) {
             if (allNewsItems.length === 0) return; 
-
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${filterType}`).classList.add('active');
 
-            if (filterType === 'all') {
-                filteredNewsItems = [...allNewsItems];
-            } else {
-                filteredNewsItems = allNewsItems.filter(item => item.category === filterType);
-            }
+            filteredNewsItems = filterType === 'all' 
+                ? [...allNewsItems] 
+                : allNewsItems.filter(item => item.category === filterType);
 
             document.getElementById('loader-list').classList.add('hidden');
             document.getElementById('news-grid').innerHTML = '';
@@ -296,7 +327,6 @@
                 document.getElementById('loader-list').innerText = dict[currentLang].empty;
                 return;
             }
-
             renderNextBatch();
         }
 
@@ -339,9 +369,7 @@
             });
 
             currentRenderIndex += RENDER_BATCH_SIZE;
-            if (currentRenderIndex >= filteredNewsItems.length) {
-                document.getElementById('scroll-loader').classList.add('hidden');
-            }
+            if (currentRenderIndex >= filteredNewsItems.length) document.getElementById('scroll-loader').classList.add('hidden');
         }
 
         function setupScrollObserver() {
