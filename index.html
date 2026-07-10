@@ -12,11 +12,47 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
+        /* Интеграция твоей кастомной палитры */
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f19;
+            background-color: #1f2421; /* Основной фон */
+            color: #dce1de; /* Основной текст */
         }
         .code-font { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Стили элементов с твоими цветами */
+        .custom-navbar {
+            background-color: rgba(31, 36, 33, 0.8);
+            border-color: #216869;
+        }
+        .custom-card {
+            background-color: rgba(33, 104, 105, 0.2);
+            border-color: rgba(33, 104, 105, 0.4);
+        }
+        .custom-card:hover {
+            border-color: #49a078;
+            box-shadow: 0 20px 30px -10px rgba(73, 160, 120, 0.2);
+        }
+        .btn-active {
+            background-color: #49a078;
+            color: #1f2421;
+        }
+        .btn-inactive {
+            border-color: #216869;
+            color: #9cc5a1;
+        }
+        .btn-inactive:hover {
+            color: #dce1de;
+            border-color: #49a078;
+        }
+        .text-accent {
+            color: #49a078;
+        }
+        .text-muted-custom {
+            color: #9cc5a1;
+        }
+
+        /* Анимация появления карточек */
         .tech-card {
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             opacity: 0;
@@ -24,34 +60,33 @@
             animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .tech-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.3);
+            transform: translateY(-6px) scale(1.01);
         }
         @keyframes fadeInUp {
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="text-gray-100 min-h-screen">
+<body class="min-h-screen">
 
     <!-- НАВИГАЦИЯ -->
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#0b0f19]/80 border-b border-gray-800">
+    <header class="sticky top-0 z-50 backdrop-blur-md custom-navbar border-b">
         <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
             <!-- Логотип -->
             <a href="#" class="flex items-center space-x-2 group">
-                <div class="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:rotate-12 transition-transform">
-                    <span class="code-font font-bold text-xl text-white">T</span>
+                <div class="w-10 h-10 bg-gradient-to-tr from-[#216869] to-[#49a078] rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+                    <span class="code-font font-bold text-xl text-[#1f2421]">T</span>
                 </div>
-                <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-indigo-400 bg-clip-text text-transparent">Tech<span class="text-indigo-500">Pulse</span></span>
+                <span class="text-xl font-extrabold tracking-tight text-[#dce1de]">Tech<span class="text-accent">Pulse</span></span>
             </a>
             
             <!-- Переключатель языка и статус -->
             <div class="flex items-center space-x-4">
-                <div class="bg-gray-900 border border-gray-800 rounded-xl p-1 flex">
-                    <button id="lang-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white">RU</button>
-                    <button id="lang-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white">EN</button>
+                <div class="bg-[#1f2421] border border-[#216869] rounded-xl p-1 flex">
+                    <button id="lang-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all btn-active">RU</button>
+                    <button id="lang-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted-custom hover:text-white">EN</button>
                 </div>
-                <span id="badge-live" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 code-font animate-pulse">
+                <span id="badge-live" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#49a078]/10 text-accent border border-[#49a078]/20 code-font animate-pulse">
                     • LIVE ОБНОВЛЕНИЕ
                 </span>
             </div>
@@ -62,44 +97,44 @@
         
         <!-- ГЛАВНЫЙ ТРЕНД -->
         <section class="mb-16" id="top-trend-section">
-            <div id="loader-trend" class="text-center py-12 text-gray-500 code-font">Загрузка главного тренда...</div>
-            <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden bg-gradient-to-br from-gray-900 to-slate-900 border border-gray-800 p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px]">
-                <div class="absolute -top-40 -right-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+            <div id="loader-trend" class="text-center py-12 text-muted-custom code-font">Загрузка главного тренда...</div>
+            <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden custom-card border p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px]">
+                <div class="absolute -top-40 -right-40 w-96 h-96 bg-[#49a078]/5 rounded-full blur-[120px] pointer-events-none"></div>
                 
                 <div class="space-y-6 max-w-xl z-10">
-                    <span id="txt-trend-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 tracking-wide uppercase code-font">
+                    <span id="txt-trend-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#49a078]/10 text-accent border border-[#49a078]/20 tracking-wide uppercase code-font">
                         🔥 ГЛАВНАЯ НОВОСТЬ ЧАСА
                     </span>
-                    <h1 id="trend-title" class="text-2xl md:text-4xl font-black tracking-tight text-white leading-tight hover:text-indigo-400 transition-colors"></h1>
-                    <p id="trend-description" class="text-gray-400 text-sm md:text-base leading-relaxed"></p>
-                    <div class="flex items-center space-x-4 text-xs text-gray-500">
+                    <h1 id="trend-title" class="text-2xl md:text-4xl font-black tracking-tight text-[#dce1de] leading-tight hover:text-accent transition-colors"></h1>
+                    <p id="trend-description" class="text-muted-custom text-sm md:text-base leading-relaxed"></p>
+                    <div class="flex items-center space-x-4 text-xs text-muted-custom">
                         <span id="trend-date">Только что</span>
                         <span>•</span>
-                        <a id="trend-link" href="#" target="_blank" class="text-indigo-400 hover:underline font-semibold">Читать на источнике →</a>
+                        <a id="trend-link" href="#" target="_blank" class="text-accent hover:underline font-semibold">Читать на источнике →</a>
                     </div>
                 </div>
 
                 <!-- Главная картинка -->
-                <div class="w-full md:w-[420px] h-64 md:h-80 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl z-10 relative bg-gray-950 flex-shrink-0">
+                <div class="w-full md:w-[420px] h-64 md:h-80 rounded-2xl overflow-hidden border border-[#216869] shadow-2xl z-10 relative bg-[#1f2421] flex-shrink-0">
                     <img id="trend-image" src="" alt="" class="w-full h-full object-cover hidden">
-                    <div id="trend-image-placeholder" class="w-full h-full bg-gradient-to-tr from-indigo-950 to-purple-950 flex items-center justify-center text-xs font-bold text-indigo-400 code-font">[ TECH PULSE ]</div>
+                    <div id="trend-image-placeholder" class="w-full h-full bg-gradient-to-tr from-[#1f2421] to-[#216869] flex items-center justify-center text-xs font-bold text-accent code-font">[ TECH PULSE ]</div>
                 </div>
             </div>
         </section>
 
         <!-- ЛЕНТА СВЕЖИХ НОВОСТЕЙ -->
         <section>
-            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight text-white mb-8 flex items-center gap-2">
-                <span class="w-2 h-6 bg-indigo-500 rounded-full"></span> Лента новостей (Гаджеты, ПК, ИИ)
+            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight text-[#dce1de] mb-8 flex items-center gap-2">
+                <span class="w-2 h-6 bg-[#49a078] rounded-full"></span> Лента новостей (Гаджеты, ПК, ИИ)
             </h2>
 
-            <div id="loader-list" class="text-center py-20 text-gray-500 code-font">Ищем самые свежие инсайды...</div>
+            <div id="loader-list" class="text-center py-20 text-muted-custom code-font">Ищем самые свежие инсайды...</div>
             
             <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
         </section>
     </main>
 
-    <footer class="border-t border-gray-800 mt-20 bg-[#070a12]/50 text-gray-500 text-sm py-8 text-center">
+    <footer class="border-t border-[#216869] mt-20 bg-[#1f2421] text-muted-custom text-sm py-8 text-center">
         <p id="txt-footer">© 2026 TechPulse. Работает на автоматических API-алгоритмах.</p>
     </footer>
 
@@ -107,7 +142,6 @@
     <script>
         let currentLang = 'ru';
 
-        // Словарь для перевода интерфейса
         const translations = {
             ru: {
                 live: '• LIVE ОБНОВЛЕНИЕ',
@@ -135,7 +169,7 @@
             const t = translations[currentLang];
             document.getElementById('badge-live').innerText = t.live;
             document.getElementById('txt-trend-badge').innerText = t.trendBadge;
-            document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-indigo-500 rounded-full"></span> ${t.feedTitle}`;
+            document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-[#49a078] rounded-full"></span> ${t.feedTitle}`;
             document.getElementById('txt-footer').innerText = t.footer;
         }
 
@@ -143,11 +177,17 @@
             if (currentLang === lang) return;
             currentLang = lang;
 
-            // Меняем стили кнопок переключателя
-            document.getElementById('lang-ru').className = lang === 'ru' ? 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white' : 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white';
-            document.getElementById('lang-en').className = lang === 'en' ? 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white' : 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white';
+            const ruBtn = document.getElementById('lang-ru');
+            const enBtn = document.getElementById('lang-en');
 
-            // Показываем лоадеры
+            if(lang === 'ru') {
+                ruBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all btn-active';
+                enBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted-custom hover:text-white';
+            } else {
+                enBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all btn-active';
+                ruBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted-custom hover:text-white';
+            }
+
             document.getElementById('loader-trend').classList.remove('hidden');
             document.getElementById('trend-container').classList.add('hidden');
             document.getElementById('loader-list').classList.remove('hidden');
@@ -162,7 +202,6 @@
 
         async function loadNews() {
             try {
-                // Получаем актуальные новости по технологиям с использованием публичного хаба
                 const category = currentLang === 'ru' ? 'technology' : 'tech';
                 const url = `https://api.spaceflightnewsapi.net/v4/articles/?limit=12&search=${category}`;
                 
@@ -201,30 +240,29 @@
                 items.slice(1).forEach((news, index) => {
                     const descText = news.summary ? (news.summary.substring(0, 110) + '...') : 'Самые свежие детали и разбор релиза уже доступны на первоисточнике.';
                     
-                    // Проверка наличия изображения у карточки
-                    let cardImageHtml = `<div class="h-48 bg-gradient-to-br from-indigo-950 to-slate-900 flex items-center justify-center border-b border-gray-800 text-xs font-bold text-indigo-400 code-font uppercase">[ TECH UPDATE ]</div>`;
+                    let cardImageHtml = `<div class="h-48 bg-gradient-to-br from-[#1f2421] to-[#216869] flex items-center justify-center border-b border-[#216869] text-xs font-bold text-accent code-font uppercase">[ TECH UPDATE ]</div>`;
                     if (news.image_url) {
                         cardImageHtml = `
-                            <div class="h-48 overflow-hidden border-b border-gray-800 bg-gray-950 relative">
+                            <div class="h-48 overflow-hidden border-b border-[#216869] bg-[#1f2421] relative">
                                 <img src="${news.image_url}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </div>
                         `;
                     }
 
                     const cardHtml = `
-                        <article class="tech-card bg-gray-900/40 border border-gray-800/60 rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${index * 50}ms">
+                        <article class="tech-card custom-card border rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${index * 50}ms">
                             <div>
                                 ${cardImageHtml}
                                 <div class="p-6 space-y-3">
-                                    <h3 class="text-base font-bold text-gray-100 leading-snug group-hover:text-indigo-400 transition-colors">
+                                    <h3 class="text-base font-bold text-[#dce1de] leading-snug group-hover:text-accent transition-colors">
                                         <a href="${news.url}" target="_blank">${news.title}</a>
                                     </h3>
-                                    <p class="text-sm text-gray-400 leading-relaxed">${descText}</p>
+                                    <p class="text-sm text-muted-custom leading-relaxed">${descText}</p>
                                 </div>
                             </div>
-                            <div class="p-6 pt-0 flex items-center justify-between text-xs text-gray-500">
+                            <div class="p-6 pt-0 flex items-center justify-between text-xs text-muted-custom">
                                 <span>LIVE</span>
-                                <a href="${news.url}" target="_blank" class="hover:text-indigo-400 transition-colors font-semibold flex items-center gap-1">${translations[currentLang].readMore}</a>
+                                <a href="${news.url}" target="_blank" class="hover:text-accent transition-colors font-semibold flex items-center gap-1">${translations[currentLang].readMore}</a>
                             </div>
                         </article>
                     `;
@@ -237,7 +275,6 @@
             }
         }
 
-        // Первичная сборка сайта
         window.addEventListener('DOMContentLoaded', () => {
             updateUIStrings();
             loadNews();
