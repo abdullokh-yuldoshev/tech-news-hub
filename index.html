@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechPulse | Живая Лента Технологий</title>
+    <!-- Tailwind CSS для дизайна -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+        }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+        .tech-card {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .tech-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.25);
+        }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen">
+
+    <!-- НАВИГАЦИЯ -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#0b0f19]/80 border-b border-gray-800">
+        <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
+            <a href="#" class="flex items-center space-x-2 group">
+                <div class="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:rotate-12 transition-transform">
+                    <span class="code-font font-bold text-xl text-white">T</span>
+                </div>
+                <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-indigo-400 bg-clip-text text-transparent">Tech<span class="text-indigo-500">Pulse</span></span>
+            </a>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 code-font animate-pulse">
+                • LIVE ОБНОВЛЕНИЕ
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-12">
+        
+        <!-- ГЛАВНЫЙ ТРЕНД (ПОДТЯГИВАЕТСЯ АВТОМАТИЧЕСКИ) -->
+        <section class="mb-16" id="top-trend-section">
+            <div id="loader-trend" class="text-center py-12 text-gray-500 code-font">Загрузка главного тренда...</div>
+            <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden bg-gradient-to-br from-gray-900 to-slate-900 border border-gray-800 p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px]">
+                <div class="absolute -top-40 -right-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+                <div class="space-y-6 max-w-2xl z-10">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 tracking-wide uppercase code-font">
+                        🔥 ГЛАВНАЯ НОВОСТЬ ЧАСА
+                    </span>
+                    <h1 id="trend-title" class="text-2xl md:text-4xl font-black tracking-tight text-white leading-tight hover:text-indigo-400 transition-colors"></h1>
+                    <p id="trend-description" class="text-gray-400 text-sm md:text-base leading-relaxed"></p>
+                    <div class="flex items-center space-x-4 text-xs text-gray-500">
+                        <span id="trend-date"></span>
+                        <span>•</span>
+                        <a id="trend-link" href="#" target="_blank" class="text-indigo-400 hover:underline font-semibold">Читать на источнике →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ЛЕНТА СВЕЖИХ НОВОСТЕЙ -->
+        <section>
+            <h2 class="text-2xl font-extrabold tracking-tight text-white mb-8 flex items-center gap-2">
+                <span class="w-2 h-6 bg-indigo-500 rounded-full"></span> Лента новостей (Гаджеты, ПК, ИИ)
+            </h2>
+
+            <div id="loader-list" class="text-center py-20 text-gray-500 code-font">Ищем самые свежие инсайды...</div>
+            
+            <!-- Сюда скрипт сам добавит карточки -->
+            <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        </section>
+    </main>
+
+    <footer class="border-t border-gray-800 mt-20 bg-[#070a12]/50 text-gray-500 text-sm py-8 text-center">
+        <p>© 2026 TechPulse. Работает на автоматических RSS-алгоритмах.</p>
+    </footer>
+
+    <!-- СКРИПТ АВТОПОДТЯГИВАНИЯ НОВОСТЕЙ -->
+    <script>
+        // Используем открытые проверенные RSS ленты новостей технологий
+        const RSS_FEED_URL = 'https://news.yandex.ru/computers.rss'; // Пример стабильного фида про гаджеты и ПК
+        const API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_FEED_URL)}`;
+
+        async function loadNews() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (data.status !== 'ok') throw new Error('Ошибка загрузки фида');
+
+                const items = data.items;
+                
+                // 1. Наполняем Главный тренд (первая новость из списка)
+                if (items.length > 0) {
+                    const mainNews = items[0];
+                    document.getElementById('trend-title').innerText = mainNews.title;
+                    // Очищаем описание от html-тегов, если они есть
+                    document.getElementById('trend-description').innerText = mainNews.description.replace(/<[^>]*>/g, '').substring(0, 250) + '...';
+                    document.getElementById('trend-date').innerText = new Date(mainNews.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' сегодня';
+                    document.getElementById('trend-link').href = mainNews.link;
+                    
+                    document.getElementById('loader-trend').classList.add('hidden');
+                    document.getElementById('trend-container').classList.remove('hidden');
+                }
+
+                // 2. Наполняем остальную сетку новостей
+                const grid = document.getElementById('news-grid');
+                document.getElementById('loader-list').classList.add('hidden');
+
+                // Пропускаем первую новость, так как она уже в тренде
+                items.slice(1, 10).forEach((news, index) => {
+                    // Создаем случайный красивый градиент-заглушку вместо картинок для стиля
+                    const gradients = [
+                        'from-slate-800 to-indigo-950',
+                        'from-slate-800 to-purple-950',
+                        'from-slate-800 to-slate-900',
+                        'from-indigo-950 to-purple-900'
+                    ];
+                    const randomGradient = gradients[index % gradients.length];
+                    
+                    const cleanDesc = news.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...';
+                    const time = new Date(news.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    const cardHtml = `
+                        <article class="tech-card bg-gray-900/50 border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${index * 100}ms">
+                            <div>
+                                <div class="h-40 bg-gradient-to-br ${randomGradient} flex items-center justify-center border-b border-gray-800 relative">
+                                    <span class="text-[10px] font-bold text-indigo-400 tracking-widest code-font uppercase">[ TECH UPDATE ]</span>
+                                </div>
+                                <div class="p-6 space-y-3">
+                                    <h3 class="text-lg font-bold text-gray-100 leading-snug group-hover:text-indigo-400 transition-colors">
+                                        <a href="${news.link}" target="_blank">${news.title}</a>
+                                    </h3>
+                                    <p class="text-sm text-gray-400 leading-relaxed">${cleanDesc}</p>
+                                </div>
+                            </div>
+                            <div class="p-6 pt-0 flex items-center justify-between text-xs text-gray-500">
+                                <span>${time} сегодня</span>
+                                <a href="${news.link}" target="_blank" class="hover:text-indigo-400 transition-colors font-semibold flex items-center gap-1">Источник →</a>
+                            </div>
+                        </article>
+                    `;
+                    grid.innerHTML += cardHtml;
+                });
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loader-list').innerText = 'Не удалось загрузить живые новости. Попробуйте позже.';
+            }
+        }
+
+        // Запуск при загрузке страницы
+        window.addEventListener('DOMContentLoaded', loadNews);
+    </script>
+</body>
+</html>
