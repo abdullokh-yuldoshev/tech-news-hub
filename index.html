@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechPulse | Живая Лента Технологий</title>
-    <!-- Tailwind CSS (используем только для отступов и сеток) -->
+    <title>REALLY? | Живая Лента Технологий</title>
+    <!-- Tailwind CSS (для сетки и отступов) -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* БАЗОВЫЕ ПЕРЕМЕННЫЕ (Твоя палитра Ночного режима по умолчанию) */
+        /* НОЧНОЙ РЕЖИМ (Твоя палитра строго без зеленого!) */
         :root {
             --bg-color: #0a1128;
-            --card-bg: rgba(0, 31, 84, 0.6);
-            --card-border: #001f54;
+            --card-bg: #001f54;
+            --card-border: #034078;
             --accent: #034078;
             --text-main: #dce1de;
-            --text-muted: #9cc5a1; /* Взяли из дневной для красивого контраста */
-            --glow: rgba(3, 64, 120, 0.5);
+            --text-muted: rgba(220, 225, 222, 0.65); /* #dce1de с прозрачностью */
+            --glow: rgba(3, 64, 120, 0.4);
+            --btn-text: #dce1de;
         }
 
-        /* ПЕРЕМЕННЫЕ ДНЕВНОЙ ТЕМЫ (Твоя палитра Лесной/Техно) */
+        /* ДНЕВНОЙ РЕЖИМ (Лесной зеленый) */
         body.theme-light {
             --bg-color: #1f2421;
             --card-bg: rgba(33, 104, 105, 0.2);
@@ -32,9 +30,10 @@
             --text-main: #dce1de;
             --text-muted: #9cc5a1;
             --glow: rgba(73, 160, 120, 0.4);
+            --btn-text: #1f2421;
         }
 
-        /* ПРИМЕНЕНИЕ ЦВЕТОВ (Никаких конфликтов с Tailwind) */
+        /* БАЗОВЫЕ СТИЛИ */
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
@@ -43,143 +42,135 @@
         }
         .code-font { font-family: 'JetBrains Mono', monospace; }
         
-        .app-navbar { background-color: var(--bg-color); border-bottom: 1px solid var(--card-border); opacity: 0.95; }
-        .app-card { background-color: var(--card-bg); border: 1px solid var(--card-border); }
-        .app-card:hover { border-color: var(--accent); box-shadow: 0 15px 30px -10px var(--glow); }
+        .app-navbar { background-color: var(--bg-color); border-bottom: 1px solid var(--card-border); opacity: 0.98; }
+        .app-card { background-color: var(--card-bg); border: 1px solid var(--card-border); transition: all 0.3s ease; }
         
-        .text-accent { color: var(--accent); }
+        /* Исправленный ховер, чтобы не сливалось */
+        .app-card:hover { border-color: var(--text-muted); box-shadow: 0 15px 30px -10px var(--glow); transform: translateY(-4px); }
+        
+        .text-accent { color: var(--text-main); font-weight: 800; text-shadow: 0 0 10px var(--glow); }
         .text-muted { color: var(--text-muted); }
-        .bg-accent { background-color: var(--accent); color: var(--text-main); }
-        .border-accent { border-color: var(--accent); }
+        
+        .bg-accent { background-color: var(--accent); color: var(--btn-text); }
         .border-custom { border-color: var(--card-border); }
         
-        .badge-live { background-color: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        /* Стили фильтров */
+        .filter-btn { border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+        .filter-btn:hover { border-color: var(--text-main); color: var(--text-main); }
+        .filter-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--btn-text); }
+
         .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
 
-        /* АНИМАЦИИ */
-        .tech-card {
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.6s ease forwards;
-        }
-        .tech-card:hover { transform: translateY(-6px) scale(1.01); }
+        .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen"> 
 
     <!-- НАВИГАЦИЯ -->
-    <header class="sticky top-0 z-50 backdrop-blur-md app-navbar transition-colors duration-400">
+    <header class="sticky top-0 z-50 backdrop-blur-md app-navbar">
         <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
-            
-            <!-- Логотип -->
             <a href="#" class="flex items-center space-x-2 group">
                 <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
-                    <span class="code-font font-bold text-xl">T</span>
+                    <span class="code-font font-bold text-xl text-[var(--btn-text)]">?</span>
                 </div>
-                <span class="text-xl font-extrabold tracking-tight">Tech<span class="text-accent transition-colors">Pulse</span></span>
+                <span class="text-2xl font-extrabold tracking-tight">REALLY<span class="text-accent">?</span></span>
             </a>
             
-            <!-- Инструменты -->
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                <!-- Переключатель Темы -->
-                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all flex items-center justify-center" id="theme-toggle-btn" title="Сменить тему">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all" id="theme-toggle-btn" title="Сменить тему">
                     🌙
                 </button>
 
-                <!-- Переключатель Языка -->
                 <div class="app-card rounded-xl p-1 flex">
                     <button id="btn-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent">RU</button>
-                    <button id="btn-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-white opacity-60">EN</button>
+                    <button id="btn-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent">EN</button>
                 </div>
-
-                <!-- Статус -->
-                <span id="txt-live" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold badge-live code-font animate-pulse transition-all">
-                    • LIVE ОБНОВЛЕНИЕ
-                </span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-12">
+    <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-8">
         
-        <!-- ГЛАВНЫЙ ТРЕНД -->
-        <section class="mb-16">
-            <div id="loader-trend" class="text-center py-12 text-muted code-font">Загрузка данных...</div>
-            
-            <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden app-card p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px] transition-colors duration-400">
-                <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-[120px] pointer-events-none" style="background-color: var(--glow)"></div>
-                
-                <div class="space-y-6 max-w-xl z-10">
-                    <span id="txt-trend-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold badge-live tracking-wide uppercase code-font transition-all">
-                        🔥 ГЛАВНАЯ НОВОСТЬ ЧАСА
-                    </span>
-                    <h1 id="trend-title" class="text-2xl md:text-4xl font-black tracking-tight leading-tight hover:text-accent transition-colors cursor-pointer"></h1>
-                    <p id="trend-description" class="text-muted text-sm md:text-base leading-relaxed"></p>
-                    <div class="flex items-center space-x-4 text-xs text-muted">
-                        <span id="trend-date">Только что</span>
-                        <span>•</span>
-                        <a id="trend-link" href="#" target="_blank" class="text-accent hover:underline font-semibold transition-colors">Читать на источнике →</a>
-                    </div>
-                </div>
-
-                <!-- Главная картинка -->
-                <div class="w-full md:w-[420px] h-64 md:h-80 rounded-2xl overflow-hidden border border-custom shadow-2xl z-10 relative flex-shrink-0">
-                    <img id="trend-image" src="" alt="" class="w-full h-full object-cover hidden" onerror="handleImageError(this)">
-                    <div id="trend-placeholder" class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-accent code-font transition-all">[ TECH PULSE ]</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ЛЕНТА НОВОСТЕЙ -->
-        <section>
-            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight mb-8 flex items-center gap-2">
+        <!-- ПАНЕЛЬ ФИЛЬТРОВ И ЗАГОЛОВОК -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight flex items-center gap-2">
                 <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
             </h2>
-
-            <div id="loader-list" class="text-center py-20 text-muted code-font">Ищем свежие инсайды...</div>
             
-            <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-        </section>
+            <!-- Фильтры по дате -->
+            <div class="flex space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide" id="filters-container">
+                <button onclick="applyFilter('all')" id="filter-all" class="filter-btn active">Все</button>
+                <button onclick="applyFilter('today')" id="filter-today" class="filter-btn">Сегодня</button>
+                <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn">Вчера</button>
+            </div>
+        </div>
+
+        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка данных...</div>
+        
+        <!-- СЕТКА НОВОСТЕЙ -->
+        <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+
+        <!-- ТРИГГЕР ДЛЯ БЕСКОНЕЧНОЙ ПРОКРУТКИ -->
+        <div id="scroll-trigger" class="h-20 flex items-center justify-center mt-8">
+            <span id="scroll-loader" class="text-muted code-font hidden">Подгружаем еще...</span>
+        </div>
     </main>
 
-    <footer class="border-t border-custom mt-20 text-muted text-sm py-8 text-center transition-colors duration-400">
+    <footer class="border-t border-custom mt-12 text-muted text-sm py-8 text-center">
         <p id="txt-footer"></p>
     </footer>
 
-    <!-- ЛОГИКА ПРИЛОЖЕНИЯ -->
     <script>
         let currentLang = 'ru';
-        let currentTheme = 'dark'; // По умолчанию ночь
+        let currentTheme = 'dark';
+        
+        // Массивы для данных и прокрутки
+        let allNewsItems = []; 
+        let filteredNewsItems = [];
+        let currentRenderIndex = 0;
+        const RENDER_BATCH_SIZE = 9;
+        let currentFilter = 'all';
 
-        // Текстовки
         const dict = {
             ru: {
-                live: '• LIVE ОБНОВЛЕНИЕ',
-                trendBadge: '🔥 ГЛАВНАЯ НОВОСТЬ ЧАСА',
-                feedTitle: 'Лента новостей (Гаджеты, ПК, ИИ)',
-                footer: `© ${new Date().getFullYear()} TechPulse. Работает на умных RSS-алгоритмах.`,
-                loading: 'Ищем свежие инсайды...',
-                readMore: 'Источник →',
-                error: 'Не удалось загрузить ленту. Пожалуйста, обновите страницу.'
+                feedTitle: 'Лента новостей',
+                footer: `© ${new Date().getFullYear()} REALLY?. Работает на умных RSS-алгоритмах.`,
+                loading: 'Сбор свежих новостей со всего мира...',
+                readMore: 'Читать',
+                error: 'Не удалось загрузить ленту. Попробуйте обновить страницу.',
+                filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
+                empty: 'За этот период новостей пока нет.',
+                loadingMore: 'Подгружаем еще...'
             },
             en: {
-                live: '• LIVE UPDATE',
-                trendBadge: '🔥 TOP TECH TREND',
-                feedTitle: 'News Feed (Gadgets, PC, AI)',
-                footer: `© ${new Date().getFullYear()} TechPulse. Powered by smart RSS algorithms.`,
-                loading: 'Searching for the latest insights...',
-                readMore: 'Read More →',
-                error: 'Failed to load feed. Please refresh the page.'
+                feedTitle: 'News Feed',
+                footer: `© ${new Date().getFullYear()} REALLY?. Powered by smart RSS algorithms.`,
+                loading: 'Gathering the latest world news...',
+                readMore: 'Read',
+                error: 'Failed to load feed. Please refresh the page.',
+                filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
+                empty: 'No news found for this period.',
+                loadingMore: 'Loading more...'
             }
         };
 
-        // 1. Управление темами
+        const RSS_SOURCES = {
+            ru: [
+                'https://www.ixbt.com/export/news.rss',
+                'https://3dnews.ru/news/rss/',
+                'https://hi-tech.mail.ru/rss/all/'
+            ],
+            en: [
+                'https://techcrunch.com/feed/',
+                'https://www.theverge.com/rss/index.xml',
+                'https://www.engadget.com/rss.xml'
+            ]
+        };
+
         function toggleTheme() {
             const body = document.body;
             const btn = document.getElementById('theme-toggle-btn');
-            
             if (currentTheme === 'dark') {
                 currentTheme = 'light';
                 body.classList.add('theme-light');
@@ -191,7 +182,6 @@
             }
         }
 
-        // 2. Управление языками
         function changeLanguage(lang) {
             if (currentLang === lang) return;
             currentLang = lang;
@@ -201,10 +191,10 @@
 
             if(lang === 'ru') {
                 btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
-                btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-white opacity-60';
+                btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
             } else {
                 btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
-                btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-white opacity-60';
+                btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
             }
 
             updateTexts();
@@ -213,142 +203,195 @@
 
         function updateTexts() {
             const t = dict[currentLang];
-            document.getElementById('txt-live').innerText = t.live;
-            document.getElementById('txt-trend-badge').innerText = t.trendBadge;
             document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> ${t.feedTitle}`;
             document.getElementById('txt-footer').innerText = t.footer;
-            
-            document.getElementById('loader-trend').innerText = t.loading;
-            document.getElementById('loader-list').innerText = t.loading;
+            document.getElementById('filter-all').innerText = t.filterAll;
+            document.getElementById('filter-today').innerText = t.filterToday;
+            document.getElementById('filter-yesterday').innerText = t.filterYesterday;
+            document.getElementById('scroll-loader').innerText = t.loadingMore;
         }
 
-        // 3. Обработка ошибок загрузки картинок (Критичный фикс)
         function handleImageError(imgElement) {
-            imgElement.style.display = 'none'; // Скрываем битую картинку
-            // Показываем соседний элемент (заглушку)
+            imgElement.style.display = 'none';
             if(imgElement.nextElementSibling) {
                 imgElement.nextElementSibling.style.display = 'flex';
             }
         }
 
-        // 4. Умный парсер новостей
+        // Парсинг дат и присвоение категорий (сегодня/вчера)
+        function parseAndFormatDate(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const isToday = date.toDateString() === today.toDateString();
+            const isYesterday = date.toDateString() === yesterday.toDateString();
+
+            const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            let category = 'older';
+            let label = `${date.toLocaleDateString()} в ${time}`;
+
+            if (isToday) {
+                category = 'today';
+                label = `${dict[currentLang].filterToday}, ${time}`;
+            } else if (isYesterday) {
+                category = 'yesterday';
+                label = `${dict[currentLang].filterYesterday}, ${time}`;
+            }
+
+            return { label, category, timestamp: date.getTime() };
+        }
+
         async function fetchNews() {
-            // Показываем загрузку
-            document.getElementById('loader-trend').classList.remove('hidden');
-            document.getElementById('trend-container').classList.add('hidden');
             document.getElementById('loader-list').classList.remove('hidden');
+            document.getElementById('loader-list').innerText = dict[currentLang].loading;
             document.getElementById('news-grid').innerHTML = '';
+            document.getElementById('scroll-loader').classList.add('hidden');
+            allNewsItems = [];
 
             try {
-                // Разные и надежные RSS ленты для RU и EN
-                const targetRSS = currentLang === 'ru' 
-                    ? 'https://3dnews.ru/news/rss/' 
-                    : 'https://techcrunch.com/feed/';
-
-                // Используем AllOrigins для обхода CORS + парсим XML вручную для 100% точности
-                const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetRSS)}`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
-                const items = Array.from(xmlDoc.querySelectorAll("item"));
-
-                if (items.length === 0) throw new Error("Пустая лента");
-
-                // Функция чистки HTML тегов из текста
-                const cleanText = (str, len) => str.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').substring(0, len) + '...';
-
-                // Массив готовых новостей
-                const newsList = items.map(item => {
-                    const title = item.querySelector("title")?.textContent || "Tech News";
-                    const link = item.querySelector("link")?.textContent || "#";
-                    let desc = item.querySelector("description")?.textContent || "";
-                    
-                    // Умный поиск картинки
-                    let imgUrl = "";
-                    // 1. Ищем в стандартном теге enclosure
-                    const enclosure = item.querySelector("enclosure");
-                    if (enclosure) imgUrl = enclosure.getAttribute("url");
-                    
-                    // 2. Ищем в тегах media:content (для TechCrunch)
-                    if (!imgUrl) {
-                        const media = item.getElementsByTagNameNS("*", "content");
-                        if (media.length > 0) imgUrl = media[0].getAttribute("url");
-                    }
-                    
-                    // 3. Ищем внутри HTML-описания (для 3DNews)
-                    if (!imgUrl) {
-                        const match = desc.match(/<img[^>]+src="([^">]+)"/);
-                        if (match) imgUrl = match[1];
-                    }
-
-                    return { title, link, desc: cleanText(desc, 120), img: imgUrl };
+                // Запускаем параллельный сбор данных из 3 лент сразу
+                const urls = RSS_SOURCES[currentLang];
+                const fetchPromises = urls.map(feedUrl => {
+                    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=20`;
+                    return fetch(apiUrl).then(res => res.json()).catch(() => null);
                 });
 
-                // --- ОТРИСОВКА ---
-                const main = newsList[0];
-                document.getElementById('trend-title').innerText = main.title;
-                document.getElementById('trend-title').onclick = () => window.open(main.link, '_blank');
-                document.getElementById('trend-description').innerText = main.desc;
-                document.getElementById('trend-link').href = main.link;
-                document.getElementById('trend-link').innerText = dict[currentLang].readMore;
+                const results = await Promise.all(fetchPromises);
 
-                const tImg = document.getElementById('trend-image');
-                const tPlace = document.getElementById('trend-placeholder');
-                
-                if (main.img) {
-                    tImg.src = main.img;
-                    tImg.style.display = 'block';
-                    tPlace.style.display = 'none';
-                } else {
-                    tImg.style.display = 'none';
-                    tPlace.style.display = 'flex';
-                }
+                results.forEach(data => {
+                    if (data && data.status === 'ok' && data.items) {
+                        data.items.forEach(item => {
+                            // Очистка текста
+                            let cleanDesc = (item.description || item.content || "").replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
+                            cleanDesc = cleanDesc.substring(0, 110).trim() + '...';
 
-                document.getElementById('loader-trend').classList.add('hidden');
-                document.getElementById('trend-container').classList.remove('hidden');
+                            // Поиск картинки
+                            let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
+                            if (!imgUrl) {
+                                const match = (item.content || item.description || "").match(/<img[^>]+src="([^">]+)"/);
+                                if (match) imgUrl = match[1];
+                            }
 
-                // Отрисовка сетки
-                const grid = document.getElementById('news-grid');
-                document.getElementById('loader-list').classList.add('hidden');
+                            const dateInfo = parseAndFormatDate(item.pubDate);
 
-                newsList.slice(1, 10).forEach((news, i) => {
-                    // Генерируем блок картинки с проверкой onerror
-                    const imgBlock = news.img 
-                        ? `<img src="${news.img}" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                           <div class="w-full h-full placeholder-bg items-center justify-center text-xs font-bold text-accent code-font uppercase" style="display:none;">[ TECH UPDATE ]</div>`
-                        : `<div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-accent code-font uppercase">[ TECH UPDATE ]</div>`;
-
-                    grid.innerHTML += `
-                        <article class="tech-card app-card rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${i * 50}ms" onclick="window.open('${news.link}', '_blank')">
-                            <div>
-                                <div class="h-48 overflow-hidden border-b border-custom relative">
-                                    ${imgBlock}
-                                </div>
-                                <div class="p-6 space-y-3">
-                                    <h3 class="text-base font-bold leading-snug group-hover:text-accent transition-colors">${news.title}</h3>
-                                    <p class="text-sm text-muted leading-relaxed">${news.desc}</p>
-                                </div>
-                            </div>
-                            <div class="p-6 pt-0 flex items-center justify-between text-xs text-muted">
-                                <span>LIVE</span>
-                                <span class="text-accent font-semibold flex items-center gap-1">${dict[currentLang].readMore}</span>
-                            </div>
-                        </article>
-                    `;
+                            allNewsItems.push({
+                                title: item.title,
+                                link: item.link,
+                                desc: cleanDesc,
+                                img: imgUrl,
+                                dateLabel: dateInfo.label,
+                                category: dateInfo.category,
+                                timestamp: dateInfo.timestamp
+                            });
+                        });
+                    }
                 });
+
+                if (allNewsItems.length === 0) throw new Error("Нет данных");
+
+                // Сортировка от новых к старым
+                allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
+                
+                // Применяем фильтр и начинаем рендер
+                applyFilter('all');
 
             } catch (error) {
-                console.error("Fetch Error:", error);
+                console.error("Ошибка:", error);
                 document.getElementById('loader-list').innerText = dict[currentLang].error;
             }
         }
 
-        // Запуск
+        function applyFilter(filterType) {
+            currentFilter = filterType;
+            
+            // Обновляем UI кнопок фильтра
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`filter-${filterType}`).classList.add('active');
+
+            // Фильтруем массив
+            if (filterType === 'all') {
+                filteredNewsItems = [...allNewsItems];
+            } else {
+                filteredNewsItems = allNewsItems.filter(item => item.category === filterType);
+            }
+
+            document.getElementById('loader-list').classList.add('hidden');
+            document.getElementById('news-grid').innerHTML = '';
+            currentRenderIndex = 0;
+
+            if (filteredNewsItems.length === 0) {
+                document.getElementById('loader-list').classList.remove('hidden');
+                document.getElementById('loader-list').innerText = dict[currentLang].empty;
+                return;
+            }
+
+            renderNextBatch();
+        }
+
+        // Рендер порции новостей (для бесконечной прокрутки)
+        function renderNextBatch() {
+            if (currentRenderIndex >= filteredNewsItems.length) {
+                document.getElementById('scroll-loader').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('scroll-loader').classList.remove('hidden');
+
+            const grid = document.getElementById('news-grid');
+            const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
+            
+            batch.forEach((news, i) => {
+                const imgBlock = news.img 
+                    ? `<img src="${news.img}" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                       <div class="w-full h-full placeholder-bg items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase" style="display:none;">[ NO PHOTO ]</div>`
+                    : `<div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
+
+                grid.innerHTML += `
+                    <article class="tech-card app-card rounded-2xl overflow-hidden group" style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms">
+                        <a href="${news.link}" target="_blank" class="flex flex-col h-full cursor-pointer outline-none block">
+                            <div class="h-48 overflow-hidden border-b border-custom relative">
+                                ${imgBlock}
+                                <div class="absolute top-3 left-3 bg-[#0a1128]/80 backdrop-blur-sm border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)]">
+                                    ${news.dateLabel}
+                                </div>
+                            </div>
+                            <div class="p-6 space-y-3 flex-grow">
+                                <h3 class="text-base font-bold leading-snug group-hover:text-[var(--text-muted)] transition-colors">${news.title}</h3>
+                                <p class="text-sm text-muted leading-relaxed">${news.desc}</p>
+                            </div>
+                            <div class="p-6 pt-0 flex items-center justify-between text-xs border-t border-custom/30 mt-4 pt-4">
+                                <span class="text-muted code-font">REALLY? NEWS</span>
+                                <span class="text-[var(--text-main)] font-bold flex items-center gap-1 bg-accent/20 px-3 py-1.5 rounded-lg group-hover:bg-accent group-hover:text-[var(--btn-text)] transition-colors">${dict[currentLang].readMore} →</span>
+                            </div>
+                        </a>
+                    </article>
+                `;
+            });
+
+            currentRenderIndex += RENDER_BATCH_SIZE;
+
+            if (currentRenderIndex >= filteredNewsItems.length) {
+                document.getElementById('scroll-loader').classList.add('hidden');
+            }
+        }
+
+        // Инициализация Наблюдателя для бесконечной прокрутки (Intersection Observer)
+        function setupScrollObserver() {
+            const trigger = document.getElementById('scroll-trigger');
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    renderNextBatch();
+                }
+            }, { rootMargin: "150px" });
+            observer.observe(trigger);
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             updateTexts();
+            setupScrollObserver();
             fetchNews();
         });
     </script>
