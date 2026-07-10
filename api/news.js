@@ -5,11 +5,14 @@ const FEED_SLOTS = {
     ru: [
         'https://www.ixbt.com/export/news.rss',
         'https://hi-tech.mail.ru/rss/all/',
+        'https://www.cnews.ru/inc/rss/news.xml',
     ],
     en: [
         'https://www.engadget.com/rss.xml',
         'https://www.wired.com/feed/rss',
-        'https://techcrunch.com/feed/',
+        'https://www.tomshardware.com/feeds/all',
+        'https://www.androidauthority.com/feed',
+        'https://arstechnica.com/feed/',
         'https://www.theverge.com/rss/index.xml',
     ],
 };
@@ -24,9 +27,11 @@ export default async function handler(req, res) {
     const requestedSlot = Number.parseInt(String(req.query.slot ?? '0'), 10);
     const slot = Number.isFinite(requestedSlot) && requestedSlot >= 0 ? requestedSlot : 0;
     const feeds = FEED_SLOTS[normalizedLang];
+    res.setHeader('X-Feed-Slot-Count', String(feeds.length));
 
     if (slot >= feeds.length) {
         res.setHeader('X-Feed-Has-More', '0');
+        res.setHeader('X-Feed-Error', 'out-of-range');
         res.status(200).send('<rss version="2.0"><channel></channel></rss>');
         return;
     }
@@ -41,6 +46,7 @@ export default async function handler(req, res) {
     const cacheKey = `${normalizedLang}:${slot}`;
     const cacheEntry = feedCache[cacheKey];
     if (cacheEntry?.xml && now - cacheEntry.ts < FEED_CACHE_TTL_MS) {
+        res.setHeader('X-Feed-Cache', 'hit');
         res.status(200).send(cacheEntry.xml);
         return;
     }
@@ -62,10 +68,13 @@ export default async function handler(req, res) {
         
         const xml = await response.text();
         feedCache[cacheKey] = { xml, ts: now };
+        res.setHeader('X-Feed-Cache', 'miss');
         res.status(200).send(xml);
     } catch (error) {
         clearTimeout(timeout);
         console.error(error);
-        res.status(500).send('<error>Сервер недоступен</error>');
+        // Не роняем клиент при сбое отдельного источника: отдаем пустой RSS-слот.
+        res.setHeader('X-Feed-Error', 'upstream-failed');
+        res.status(200).send('<rss version="2.0"><channel></channel></rss>');
     }
 }

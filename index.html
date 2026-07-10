@@ -47,6 +47,10 @@
         .filter-btn:hover { border-color: var(--text-main); color: var(--text-main); }
         .filter-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--btn-text); }
 
+        /* Hide native horizontal scrollbar while keeping scroll behavior for mobile chips. */
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+
         .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
         .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
         
@@ -80,11 +84,16 @@
                 <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
             </h2>
             
-            <div class="flex space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide" id="filters-container">
-                <button onclick="applyFilter('all')" id="filter-all" class="filter-btn active">Все</button>
-                <button onclick="applyFilter('today')" id="filter-today" class="filter-btn">Сегодня</button>
-                <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn">Вчера</button>
+            <div class="flex gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 md:pb-0 scrollbar-hide" id="filters-container">
+                <button onclick="applyFilter('all')" id="filter-all" class="filter-btn filter-btn-time active">Все</button>
+                <button onclick="applyFilter('today')" id="filter-today" class="filter-btn filter-btn-time">Сегодня</button>
+                <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn filter-btn-time">Вчера</button>
             </div>
+        </div>
+
+        <div class="mb-8">
+            <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-topic-label">Темы</div>
+            <div class="flex gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 scrollbar-hide" id="topic-filters-container"></div>
         </div>
 
         <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка...</div>
@@ -110,14 +119,18 @@
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
         let currentFilterType = 'all';
+        let currentTopicFilter = 'all';
         let activeFetchToken = 0;
         let activeFetchController = null;
         let currentSourceSlot = 0;
         let hasMoreSourceSlots = true;
+        let maxSourceSlots = 1;
         let isLoadingOlder = false;
+        let isWarmingTopics = false;
         const RENDER_BATCH_SIZE = 9;
-        const NEWS_CACHE_PREFIX = 'really_news_cache_v2_';
+        const NEWS_CACHE_PREFIX = 'really_news_cache_v4_';
         const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
+        const SOURCE_SLOT_COUNT = { ru: 3, en: 6 };
         const TECH_KEYWORDS = {
             ru: [
                 'технолог', 'техно', 'смартфон', 'телефон', 'планшет', 'ноутбук', 'лэптоп', 'пк', 'компьютер',
@@ -135,6 +148,83 @@
             ]
         };
 
+        const TOPIC_ORDER = [
+            'all',
+            'phones_tablets',
+            'pc_laptops',
+            'chips',
+            'ai',
+            'vr_ar',
+            'tv_display',
+            'drones_robots',
+            'wearables',
+            'gaming',
+            'apps_internet',
+        ];
+
+        const TOPIC_DEFINITIONS = {
+            phones_tablets: {
+                ru: 'Смартфоны/Планшеты',
+                en: 'Phones/Tablets',
+                ruKeywords: ['смартфон', 'телефон', 'планшет', 'iphone', 'android', 'xiaomi', 'samsung galaxy', 'pixel'],
+                enKeywords: ['smartphone', 'phone', 'tablet', 'iphone', 'android', 'galaxy', 'pixel']
+            },
+            pc_laptops: {
+                ru: 'ПК/Ноутбуки',
+                en: 'PC/Laptops',
+                ruKeywords: ['пк', 'компьютер', 'ноутбук', 'лэптоп', 'desktop', 'windows', 'macbook', 'mac'],
+                enKeywords: ['pc', 'computer', 'laptop', 'desktop', 'windows', 'macbook', 'mac']
+            },
+            chips: {
+                ru: 'Чипы/Железо',
+                en: 'Chips/Hardware',
+                ruKeywords: ['процессор', 'чип', 'видеокарт', 'gpu', 'cpu', 'npu', 'intel', 'amd', 'nvidia', 'qualcomm'],
+                enKeywords: ['processor', 'chip', 'gpu', 'cpu', 'npu', 'intel', 'amd', 'nvidia', 'qualcomm', 'hardware']
+            },
+            ai: {
+                ru: 'ИИ',
+                en: 'AI',
+                ruKeywords: ['ии', 'искусствен', 'нейросет', 'ai', 'llm', 'openai', 'chatgpt'],
+                enKeywords: ['ai', 'artificial intelligence', 'llm', 'openai', 'chatgpt', 'model']
+            },
+            vr_ar: {
+                ru: 'VR/AR/Очки',
+                en: 'VR/AR/Glasses',
+                ruKeywords: ['vr', 'ar', 'xr', 'очки', 'гарнитур', 'шлем', 'vision pro', 'headset'],
+                enKeywords: ['vr', 'ar', 'xr', 'smart glasses', 'glasses', 'headset', 'vision pro']
+            },
+            tv_display: {
+                ru: 'ТВ/Дисплеи',
+                en: 'TV/Displays',
+                ruKeywords: ['телевизор', 'tv', 'дисплей', 'экран', 'монитор', 'oled', 'mini-led'],
+                enKeywords: ['tv', 'television', 'display', 'screen', 'monitor', 'oled', 'mini-led']
+            },
+            drones_robots: {
+                ru: 'Дроны/Роботы',
+                en: 'Drones/Robots',
+                ruKeywords: ['дрон', 'робот', 'робототех', 'автоном', 'квадрокоптер'],
+                enKeywords: ['drone', 'robot', 'robotics', 'autonomous', 'quadcopter']
+            },
+            wearables: {
+                ru: 'Носимые',
+                en: 'Wearables',
+                ruKeywords: ['часы', 'смарт-часы', 'smartwatch', 'браслет', 'наушник', 'earbuds', 'wearable'],
+                enKeywords: ['smartwatch', 'watch', 'wearable', 'earbuds', 'fitness band', 'headphones']
+            },
+            gaming: {
+                ru: 'Гейминг',
+                en: 'Gaming',
+                ruKeywords: ['игр', 'gaming', 'console', 'консоль', 'playstation', 'xbox', 'nintendo', 'steam'],
+                enKeywords: ['game', 'gaming', 'console', 'playstation', 'xbox', 'nintendo', 'steam']
+            },
+            apps_internet: {
+                ru: 'Приложения/Интернет',
+                en: 'Apps/Internet',
+                ruKeywords: ['приложен', 'браузер', 'соцсет', 'мессенджер', 'интернет', 'web', 'сервис'],
+                enKeywords: ['app', 'browser', 'internet', 'web', 'service', 'social', 'messenger']
+            }
+        };
+
         const dict = {
             ru: {
                 feedTitle: 'Лента новостей',
@@ -144,6 +234,8 @@
                 readMore: 'Читать',
                 error: 'Ошибка загрузки. Обновите страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
+                topicLabel: 'Темы',
+                topicAll: 'Все темы',
                 empty: 'За этот период новостей пока нет.',
                 btnLoadMore: 'Показать еще ↓',
                 noMoreNews: 'На сегодня новостей больше нет'
@@ -156,11 +248,31 @@
                 readMore: 'Read',
                 error: 'Loading error. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
+                topicLabel: 'Topics',
+                topicAll: 'All topics',
                 empty: 'No news found for this period.',
                 btnLoadMore: 'Load more ↓',
                 noMoreNews: 'No more news for today'
             }
         };
+
+        function getTopicLabel(topicKey, lang) {
+            if (topicKey === 'all') return dict[lang].topicAll;
+            return TOPIC_DEFINITIONS[topicKey] ? TOPIC_DEFINITIONS[topicKey][lang] : topicKey;
+        }
+
+        function renderTopicButtons() {
+            const container = document.getElementById('topic-filters-container');
+            container.innerHTML = '';
+
+            TOPIC_ORDER.forEach(topicKey => {
+                const btn = document.createElement('button');
+                btn.className = `filter-btn filter-btn-topic ${topicKey === currentTopicFilter ? 'active' : ''}`;
+                btn.innerText = getTopicLabel(topicKey, currentLang);
+                btn.addEventListener('click', () => applyTopicFilter(topicKey));
+                container.appendChild(btn);
+            });
+        }
 
         function toggleTheme() {
             const body = document.body;
@@ -197,9 +309,11 @@
             const t = dict[currentLang];
             document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> ${t.feedTitle}`;
             document.getElementById('txt-footer').innerText = t.footer;
+            document.getElementById('txt-topic-label').innerText = t.topicLabel;
             document.getElementById('filter-all').innerText = t.filterAll;
             document.getElementById('filter-today').innerText = t.filterToday;
             document.getElementById('filter-yesterday').innerText = t.filterYesterday;
+            renderTopicButtons();
             
             const loadBtn = document.getElementById('btn-load-more');
             if (loadBtn.disabled) {
@@ -281,15 +395,24 @@
                 const parsed = JSON.parse(raw);
                 if (!parsed || !Array.isArray(parsed.items) || typeof parsed.ts !== 'number') return null;
                 if (Date.now() - parsed.ts > NEWS_CACHE_TTL_MS) return null;
-                return parsed.items;
+                return {
+                    items: parsed.items,
+                    loadedSlot: Number.isFinite(parsed.loadedSlot) ? parsed.loadedSlot : 0,
+                    maxSlots: Number.isFinite(parsed.maxSlots) && parsed.maxSlots > 0
+                        ? parsed.maxSlots
+                        : (SOURCE_SLOT_COUNT[lang] || 1),
+                };
             } catch (e) {
                 return null;
             }
         }
 
-        function setCachedNews(lang, items) {
+        function setCachedNews(lang, items, loadedSlot = 0, maxSlots = SOURCE_SLOT_COUNT[lang] || 1) {
             try {
-                localStorage.setItem(`${NEWS_CACHE_PREFIX}${lang}`, JSON.stringify({ ts: Date.now(), items }));
+                localStorage.setItem(
+                    `${NEWS_CACHE_PREFIX}${lang}`,
+                    JSON.stringify({ ts: Date.now(), items, loadedSlot, maxSlots })
+                );
             } catch (e) {
                 // Игнорируем ошибки localStorage (private mode / quota exceeded).
             }
@@ -299,6 +422,22 @@
             const text = `${item.title || ''} ${item.desc || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
             const keywords = lang === 'ru' ? TECH_KEYWORDS.ru : TECH_KEYWORDS.en;
             return keywords.some(keyword => text.includes(keyword));
+        }
+
+        function detectTopicKey(item, lang) {
+            const text = `${item.title || ''} ${item.desc || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
+
+            for (const topicKey of TOPIC_ORDER) {
+                if (topicKey === 'all') continue;
+                const topic = TOPIC_DEFINITIONS[topicKey];
+                if (!topic) continue;
+                const keywords = lang === 'ru' ? topic.ruKeywords : topic.enKeywords;
+                if (keywords.some(keyword => text.includes(keyword))) {
+                    return topicKey;
+                }
+            }
+
+            return 'apps_internet';
         }
 
         // Универсальный парсер на базе нативного DOMParser для безопасного и точного чтения RSS/Atom
@@ -413,8 +552,24 @@
         }
 
         function getFilteredItemsByType(filterType) {
-            if (filterType === 'all') return [...allNewsItems];
-            return allNewsItems.filter(item => item.category === filterType);
+            const byTime = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => item.category === filterType);
+            if (currentTopicFilter === 'all') return byTime;
+            return byTime.filter(item => item.topic === currentTopicFilter);
+        }
+
+        function hasEnoughPerTopic(items, minPerTopic = 10) {
+            const counts = {};
+            TOPIC_ORDER.forEach(topic => {
+                if (topic !== 'all') counts[topic] = 0;
+            });
+
+            items.forEach(item => {
+                if (item.topic && Object.prototype.hasOwnProperty.call(counts, item.topic)) {
+                    counts[item.topic] += 1;
+                }
+            });
+
+            return Object.values(counts).every(count => count >= minPerTopic);
         }
 
         function getCurrentFilterType() {
@@ -450,27 +605,76 @@
         }
 
         async function fetchFeedSlot(requestLang, slot, signal) {
-            const res = await fetch(`/api/news?lang=${requestLang}&slot=${slot}`, { signal });
+            const res = await fetch(`/api/news?lang=${requestLang}&slot=${slot}`, { signal, cache: 'no-store' });
             const xmlText = await res.text();
             if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
 
             const hasMore = res.headers.get('X-Feed-Has-More') === '1';
+            const slotCountHeader = Number.parseInt(res.headers.get('X-Feed-Slot-Count') || '0', 10);
+            const slotCount = Number.isFinite(slotCountHeader) && slotCountHeader > 0 ? slotCountHeader : 1;
             const rawItems = parseXML(xmlText).filter(item => isTechNewsItem(item, requestLang));
-            const normalizedItems = rawItems.map(item => {
+            let normalizedItems = rawItems.map(item => {
                 const dateInfo = parseAndFormatDate(item.pubDate);
-                return { ...item, dateLabel: dateInfo.label, category: dateInfo.category, timestamp: dateInfo.timestamp };
+                return {
+                    ...item,
+                    dateLabel: dateInfo.label,
+                    category: dateInfo.category,
+                    topic: detectTopicKey(item, requestLang),
+                    timestamp: dateInfo.timestamp
+                };
             });
 
-            return { items: normalizedItems, hasMore };
+            // Для EN оставляем карточки только с реальными изображениями,
+            // чтобы не было "часть с фото, часть без".
+            if (requestLang === 'en') {
+                normalizedItems = normalizedItems.filter(item => !!item.img);
+            }
+
+            return { items: normalizedItems, hasMore, slotCount };
         }
 
-        async function fetchNews(lang = currentLang) {
+        async function ensureTopicPrefill(requestLang, signal) {
+            if (isWarmingTopics) return;
+            isWarmingTopics = true;
+
+            try {
+                while (hasMoreSourceSlots && !hasEnoughPerTopic(allNewsItems, 10)) {
+                    const nextSlot = currentSourceSlot + 1;
+                    if (nextSlot >= maxSourceSlots) break;
+
+                    const { items, hasMore } = await fetchFeedSlot(requestLang, nextSlot, signal);
+                    currentSourceSlot = nextSlot;
+                    hasMoreSourceSlots = hasMore;
+
+                    // Для предзагрузки тем берем релевантные записи из всех источников,
+                    // чтобы в каждой теме было как можно больше свежих карточек.
+                    allNewsItems = mergeNewsItems(allNewsItems, items);
+                }
+
+                allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
+                setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
+                filteredNewsItems = getFilteredItemsByType(currentFilterType);
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    console.warn('Topic prefill skipped:', e);
+                }
+            } finally {
+                isWarmingTopics = false;
+            }
+        }
+
+        async function fetchNews(lang = currentLang, options = {}) {
+            const preserveFilters = !!options.preserveFilters;
             const requestLang = lang === 'en' ? 'en' : 'ru';
             const requestToken = ++activeFetchToken;
             currentSourceSlot = 0;
             hasMoreSourceSlots = true;
+            maxSourceSlots = SOURCE_SLOT_COUNT[requestLang] || 1;
             isLoadingOlder = false;
-            currentFilterType = 'all';
+            if (!preserveFilters) {
+                currentFilterType = 'all';
+                currentTopicFilter = 'all';
+            }
 
             if (activeFetchController) {
                 activeFetchController.abort();
@@ -483,26 +687,41 @@
             document.getElementById('load-more-container').classList.add('hidden');
             allNewsItems = [];
 
-            const cachedItems = getCachedNews(requestLang);
-            if (cachedItems && cachedItems.length > 0) {
+            const cachedPayload = getCachedNews(requestLang);
+            if (cachedPayload && cachedPayload.items.length > 0) {
                 if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
-                allNewsItems = [...cachedItems].sort((a, b) => b.timestamp - a.timestamp);
+
+                maxSourceSlots = cachedPayload.maxSlots;
+                currentSourceSlot = Math.min(cachedPayload.loadedSlot, Math.max(0, maxSourceSlots - 1));
+                hasMoreSourceSlots = currentSourceSlot < maxSourceSlots - 1;
+
+                allNewsItems = [...cachedPayload.items].sort((a, b) => b.timestamp - a.timestamp);
                 applyFilter('all');
-                return;
             }
 
             try {
-                const { items, hasMore } = await fetchFeedSlot(requestLang, 0, activeFetchController.signal);
+                const { items, hasMore, slotCount } = await fetchFeedSlot(requestLang, 0, activeFetchController.signal);
 
                 if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
 
+                currentSourceSlot = 0;
                 hasMoreSourceSlots = hasMore;
-                allNewsItems = items;
+                maxSourceSlots = slotCount;
+
+                if (allNewsItems.length > 0) {
+                    allNewsItems = mergeNewsItems(items, allNewsItems);
+                } else {
+                    allNewsItems = items;
+                }
 
                 if (allNewsItems.length === 0) throw new Error("Лента пуста");
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                setCachedNews(requestLang, allNewsItems);
+                await ensureTopicPrefill(requestLang, activeFetchController.signal);
+
+                if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
+
+                setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
                 applyFilter('all');
 
             } catch (error) {
@@ -520,20 +739,30 @@
 
             try {
                 const requestLang = currentLang;
-                const nextSlot = currentSourceSlot + 1;
-                const { items, hasMore } = await fetchFeedSlot(requestLang, nextSlot);
-
-                currentSourceSlot = nextSlot;
-                hasMoreSourceSlots = hasMore;
-
                 const previousRenderedCount = currentRenderIndex;
-                const oldestLoadedTs = allNewsItems.length > 0
-                    ? Math.min(...allNewsItems.map(item => item.timestamp || 0))
-                    : Number.MAX_SAFE_INTEGER;
-                const olderItems = items.filter(item => (item.timestamp || 0) <= oldestLoadedTs);
+                let appendedAny = false;
 
-                allNewsItems = mergeNewsItems(allNewsItems, olderItems);
-                setCachedNews(requestLang, allNewsItems);
+                // Пытаемся пройти через проблемный слот и взять первый валидный следующий.
+                while (!appendedAny && currentSourceSlot + 1 < maxSourceSlots) {
+                    const nextSlot = currentSourceSlot + 1;
+                    const { items, hasMore } = await fetchFeedSlot(requestLang, nextSlot);
+
+                    currentSourceSlot = nextSlot;
+                    hasMoreSourceSlots = hasMore;
+
+                    const oldestLoadedTs = allNewsItems.length > 0
+                        ? Math.min(...allNewsItems.map(item => item.timestamp || 0))
+                        : Number.MAX_SAFE_INTEGER;
+                    const olderItems = items.filter(item => (item.timestamp || 0) <= oldestLoadedTs);
+
+                    const beforeCount = allNewsItems.length;
+                    allNewsItems = mergeNewsItems(allNewsItems, olderItems);
+                    appendedAny = allNewsItems.length > beforeCount;
+
+                    if (!hasMoreSourceSlots) break;
+                }
+
+                setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
 
                 filteredNewsItems = getFilteredItemsByType(currentFilterType);
 
@@ -550,10 +779,35 @@
             }
         }
 
+        function applyTopicFilter(topicKey) {
+            currentTopicFilter = topicKey;
+            document.querySelectorAll('.filter-btn-topic').forEach(btn => btn.classList.remove('active'));
+
+            const topicButtons = document.querySelectorAll('.filter-btn-topic');
+            const selectedIndex = TOPIC_ORDER.indexOf(topicKey);
+            if (selectedIndex >= 0 && topicButtons[selectedIndex]) {
+                topicButtons[selectedIndex].classList.add('active');
+            }
+
+            filteredNewsItems = getFilteredItemsByType(currentFilterType);
+            document.getElementById('loader-list').classList.add('hidden');
+            document.getElementById('news-grid').innerHTML = '';
+            currentRenderIndex = 0;
+
+            if (filteredNewsItems.length === 0) {
+                document.getElementById('loader-list').classList.remove('hidden');
+                document.getElementById('loader-list').innerText = dict[currentLang].empty;
+                document.getElementById('load-more-container').classList.add('hidden');
+                return;
+            }
+
+            renderNextBatch();
+        }
+
         function applyFilter(filterType) {
             if (allNewsItems.length === 0) return; 
             currentFilterType = filterType;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.filter-btn-time').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${filterType}`).classList.add('active');
 
             filteredNewsItems = getFilteredItemsByType(filterType);
@@ -653,6 +907,13 @@
         window.addEventListener('DOMContentLoaded', () => {
             updateTexts();
             fetchNews(currentLang);
+
+            // Периодический авто-рефреш, чтобы лента не "застывала" надолго.
+            setInterval(() => {
+                if (!isLoadingOlder) {
+                    fetchNews(currentLang, { preserveFilters: true });
+                }
+            }, 3 * 60 * 1000);
         });
     </script>
 </body>
