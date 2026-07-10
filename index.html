@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -91,8 +90,11 @@
         
         <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
-        <div id="scroll-trigger" class="h-20 flex items-center justify-center mt-8">
-            <span id="scroll-loader" class="text-muted code-font hidden">Подгружаем еще...</span>
+        <!-- ОГРОМНАЯ КНОПКА ПОДГРУЗКИ НОВОСТЕЙ ВМЕСТО НЕВИДИМОГО СКРОЛЛА -->
+        <div id="load-more-container" class="flex justify-center mt-12 mb-8 hidden">
+            <button onclick="renderNextBatch()" id="btn-load-more" class="app-card text-[var(--text-main)] font-bold px-8 py-3 rounded-xl hover:bg-[var(--accent)] hover:text-[var(--btn-text)] transition-all outline-none cursor-pointer border border-custom shadow-lg">
+                Показать еще ↓
+            </button>
         </div>
     </main>
 
@@ -118,7 +120,8 @@
                 error: 'Ошибка загрузки. Обновите страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
                 empty: 'За этот период новостей пока нет.',
-                loadingMore: 'Загрузка...'
+                btnLoadMore: 'Показать еще ↓',
+                noMoreNews: 'На сегодня новостей больше нет'
             },
             en: {
                 feedTitle: 'News Feed',
@@ -128,7 +131,8 @@
                 error: 'Loading error. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
                 empty: 'No news found for this period.',
-                loadingMore: 'Loading...'
+                btnLoadMore: 'Load more ↓',
+                noMoreNews: 'No more news for today'
             }
         };
 
@@ -170,7 +174,11 @@
             document.getElementById('filter-all').innerText = t.filterAll;
             document.getElementById('filter-today').innerText = t.filterToday;
             document.getElementById('filter-yesterday').innerText = t.filterYesterday;
-            document.getElementById('scroll-loader').innerText = t.loadingMore;
+            
+            const loadBtn = document.getElementById('btn-load-more');
+            if(loadBtn.innerText !== dict['ru'].noMoreNews && loadBtn.innerText !== dict['en'].noMoreNews) {
+                loadBtn.innerText = t.btnLoadMore;
+            }
         }
 
         function handleImageError(imgElement) {
@@ -204,39 +212,38 @@
             }
         }
 
-        // ЖЕСТКИЙ ПАРСЕР: Выдирает картинки как сырой текст без неймспейсов
+        // БРОНЕБОЙНЫЙ ПАРСЕР КАРТИНОК И ТЕКСТА
         function parseXML(xmlStr) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(xmlStr, "text/xml");
-            const items = Array.from(doc.querySelectorAll("item")).slice(0, 40); 
+            const items = Array.from(doc.querySelectorAll("item")); 
             
             return items.map(item => {
                 const title = item.querySelector("title")?.textContent || "Без названия";
                 const link = item.querySelector("link")?.textContent || "#";
-                const pubDate = item.querySelector("pubDate")?.textContent || "";
                 
-                // Переводим весь блок новости в сырой текст для жесткого парсинга
+                // Переводим весь блок XML в текст, чтобы обойти слепоту браузера к неймспейсам TechCrunch
                 const rawItemXML = new XMLSerializer().serializeToString(item);
                 
                 let imgUrl = "";
                 
-                // 1. Ищем media:content или media:thumbnail (Главная проблема TechCrunch)
-                const mediaMatch = rawItemXML.match(/<media:(?:content|thumbnail)[^>]+url=["']([^"']+)["']/i);
-                if (mediaMatch) imgUrl = mediaMatch[1];
+                // 1. Жесткий поиск media:content или media:thumbnail (для TechCrunch)
+                let m = rawItemXML.match(/<media:(?:content|thumbnail)[^>]*\burl=["']([^"']+)["']/i);
+                if(m) imgUrl = m[1];
                 
-                // 2. Ищем классический enclosure
-                if (!imgUrl) {
-                    const encMatch = rawItemXML.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
-                    if (encMatch) imgUrl = encMatch[1];
+                // 2. Поиск enclosure
+                if(!imgUrl) {
+                    m = rawItemXML.match(/<enclosure[^>]*\burl=["']([^"']+)["']/i);
+                    if(m) imgUrl = m[1];
                 }
                 
-                // 3. Ищем картинку в самом тексте <img>
-                if (!imgUrl) {
-                    const imgMatch = rawItemXML.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (imgMatch) imgUrl = imgMatch[1];
+                // 3. Поиск любого тега <img> внутри новости
+                if(!imgUrl) {
+                    m = rawItemXML.match(/<img[^>]*\bsrc=["']([^"']+)["']/i);
+                    if(m) imgUrl = m[1];
                 }
 
-                // Очистка текста
+                // Очистка текста от HTML тегов
                 let descNode = item.querySelector("description");
                 let rawDesc = descNode ? descNode.textContent : "";
                 
@@ -244,7 +251,7 @@
                 tmp.innerHTML = rawDesc;
                 let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
                 
-                // Если текст слишком короткий, ищем контент глубже
+                // Если текста мало, вытаскиваем его из <content:encoded>
                 if (cleanDesc.length < 15) {
                     const contentNode = item.getElementsByTagNameNS("*", "encoded")[0];
                     if (contentNode) {
@@ -253,15 +260,12 @@
                     }
                 }
 
-                // Убираем HTML-сущности из ссылки на картинку (типа &amp;)
-                imgUrl = imgUrl.replace(/&amp;/g, '&');
-
                 return {
                     title: title.trim(),
                     link: link,
                     desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
-                    img: imgUrl,
-                    pubDate: pubDate
+                    img: imgUrl.replace(/&amp;/g, '&'),
+                    pubDate: item.querySelector("pubDate")?.textContent || ""
                 };
             });
         }
@@ -270,11 +274,11 @@
             document.getElementById('loader-list').classList.remove('hidden');
             document.getElementById('loader-list').innerText = dict[currentLang].loading;
             document.getElementById('news-grid').innerHTML = '';
-            document.getElementById('scroll-loader').classList.add('hidden');
+            document.getElementById('load-more-container').classList.add('hidden');
             allNewsItems = [];
 
             try {
-                // Добавлен обход кэша &t=Date.now(), чтобы ты увидел фикс мгновенно
+                // Добавлен рандомизатор обхода кэша для тестирования
                 const res = await fetch(`/api/news?lang=${currentLang}&t=${Date.now()}`);
                 const xmlText = await res.text();
                 
@@ -313,18 +317,22 @@
             if (filteredNewsItems.length === 0) {
                 document.getElementById('loader-list').classList.remove('hidden');
                 document.getElementById('loader-list').innerText = dict[currentLang].empty;
+                document.getElementById('load-more-container').classList.add('hidden');
                 return;
             }
+            
+            document.getElementById('btn-load-more').innerText = dict[currentLang].btnLoadMore;
+            document.getElementById('btn-load-more').disabled = false;
+            document.getElementById('btn-load-more').classList.remove('opacity-50', 'cursor-not-allowed');
+            
             renderNextBatch();
         }
 
         function renderNextBatch() {
             if (currentRenderIndex >= filteredNewsItems.length) {
-                document.getElementById('scroll-loader').classList.add('hidden');
                 return;
             }
 
-            document.getElementById('scroll-loader').classList.remove('hidden');
             const grid = document.getElementById('news-grid');
             const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
             
@@ -357,20 +365,23 @@
             });
 
             currentRenderIndex += RENDER_BATCH_SIZE;
-            if (currentRenderIndex >= filteredNewsItems.length) document.getElementById('scroll-loader').classList.add('hidden');
-        }
-
-        function setupScrollObserver() {
-            const trigger = document.getElementById('scroll-trigger');
-            const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) renderNextBatch();
-            }, { rootMargin: "150px" });
-            observer.observe(trigger);
+            
+            // Управление состоянием кнопки загрузки
+            const loadContainer = document.getElementById('load-more-container');
+            const loadBtn = document.getElementById('btn-load-more');
+            
+            if (currentRenderIndex >= filteredNewsItems.length) {
+                loadContainer.classList.remove('hidden');
+                loadBtn.innerText = dict[currentLang].noMoreNews;
+                loadBtn.disabled = true;
+                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                loadContainer.classList.remove('hidden');
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             updateTexts();
-            setupScrollObserver();
             fetchNews();
         });
     </script>
