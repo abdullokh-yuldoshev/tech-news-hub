@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TechPulse | Живая Лента Технологий</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (используем только для отступов и сеток) -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,81 +12,90 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* Интеграция твоей кастомной палитры */
+        /* БАЗОВЫЕ ПЕРЕМЕННЫЕ (Твоя палитра Ночного режима по умолчанию) */
+        :root {
+            --bg-color: #0a1128;
+            --card-bg: rgba(0, 31, 84, 0.6);
+            --card-border: #001f54;
+            --accent: #034078;
+            --text-main: #dce1de;
+            --text-muted: #9cc5a1; /* Взяли из дневной для красивого контраста */
+            --glow: rgba(3, 64, 120, 0.5);
+        }
+
+        /* ПЕРЕМЕННЫЕ ДНЕВНОЙ ТЕМЫ (Твоя палитра Лесной/Техно) */
+        body.theme-light {
+            --bg-color: #1f2421;
+            --card-bg: rgba(33, 104, 105, 0.2);
+            --card-border: #216869;
+            --accent: #49a078;
+            --text-main: #dce1de;
+            --text-muted: #9cc5a1;
+            --glow: rgba(73, 160, 120, 0.4);
+        }
+
+        /* ПРИМЕНЕНИЕ ЦВЕТОВ (Никаких конфликтов с Tailwind) */
         body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #1f2421; /* Основной фон */
-            color: #dce1de; /* Основной текст */
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
         .code-font { font-family: 'JetBrains Mono', monospace; }
         
-        /* Стили элементов с твоими цветами */
-        .custom-navbar {
-            background-color: rgba(31, 36, 33, 0.8);
-            border-color: #216869;
-        }
-        .custom-card {
-            background-color: rgba(33, 104, 105, 0.2);
-            border-color: rgba(33, 104, 105, 0.4);
-        }
-        .custom-card:hover {
-            border-color: #49a078;
-            box-shadow: 0 20px 30px -10px rgba(73, 160, 120, 0.2);
-        }
-        .btn-active {
-            background-color: #49a078;
-            color: #1f2421;
-        }
-        .btn-inactive {
-            border-color: #216869;
-            color: #9cc5a1;
-        }
-        .btn-inactive:hover {
-            color: #dce1de;
-            border-color: #49a078;
-        }
-        .text-accent {
-            color: #49a078;
-        }
-        .text-muted-custom {
-            color: #9cc5a1;
-        }
+        .app-navbar { background-color: var(--bg-color); border-bottom: 1px solid var(--card-border); opacity: 0.95; }
+        .app-card { background-color: var(--card-bg); border: 1px solid var(--card-border); }
+        .app-card:hover { border-color: var(--accent); box-shadow: 0 15px 30px -10px var(--glow); }
+        
+        .text-accent { color: var(--accent); }
+        .text-muted { color: var(--text-muted); }
+        .bg-accent { background-color: var(--accent); color: var(--text-main); }
+        .border-accent { border-color: var(--accent); }
+        .border-custom { border-color: var(--card-border); }
+        
+        .badge-live { background-color: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
 
-        /* Анимация появления карточек */
+        /* АНИМАЦИИ */
         .tech-card {
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             opacity: 0;
             transform: translateY(20px);
-            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fadeInUp 0.6s ease forwards;
         }
-        .tech-card:hover {
-            transform: translateY(-6px) scale(1.01);
-        }
-        @keyframes fadeInUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .tech-card:hover { transform: translateY(-6px) scale(1.01); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen"> 
 
     <!-- НАВИГАЦИЯ -->
-    <header class="sticky top-0 z-50 backdrop-blur-md custom-navbar border-b">
+    <header class="sticky top-0 z-50 backdrop-blur-md app-navbar transition-colors duration-400">
         <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
+            
             <!-- Логотип -->
             <a href="#" class="flex items-center space-x-2 group">
-                <div class="w-10 h-10 bg-gradient-to-tr from-[#216869] to-[#49a078] rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
-                    <span class="code-font font-bold text-xl text-[#1f2421]">T</span>
+                <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+                    <span class="code-font font-bold text-xl">T</span>
                 </div>
-                <span class="text-xl font-extrabold tracking-tight text-[#dce1de]">Tech<span class="text-accent">Pulse</span></span>
+                <span class="text-xl font-extrabold tracking-tight">Tech<span class="text-accent transition-colors">Pulse</span></span>
             </a>
             
-            <!-- Переключатель языка и статус -->
-            <div class="flex items-center space-x-4">
-                <div class="bg-[#1f2421] border border-[#216869] rounded-xl p-1 flex">
-                    <button id="lang-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all btn-active">RU</button>
-                    <button id="lang-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted-custom hover:text-white">EN</button>
+            <!-- Инструменты -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- Переключатель Темы -->
+                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all flex items-center justify-center" id="theme-toggle-btn" title="Сменить тему">
+                    🌙
+                </button>
+
+                <!-- Переключатель Языка -->
+                <div class="app-card rounded-xl p-1 flex">
+                    <button id="btn-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent">RU</button>
+                    <button id="btn-en" onclick="changeLanguage('en')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-white opacity-60">EN</button>
                 </div>
-                <span id="badge-live" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#49a078]/10 text-accent border border-[#49a078]/20 code-font animate-pulse">
+
+                <!-- Статус -->
+                <span id="txt-live" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold badge-live code-font animate-pulse transition-all">
                     • LIVE ОБНОВЛЕНИЕ
                 </span>
             </div>
@@ -96,188 +105,251 @@
     <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-12">
         
         <!-- ГЛАВНЫЙ ТРЕНД -->
-        <section class="mb-16" id="top-trend-section">
-            <div id="loader-trend" class="text-center py-12 text-muted-custom code-font">Загрузка главного тренда...</div>
-            <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden custom-card border p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px]">
-                <div class="absolute -top-40 -right-40 w-96 h-96 bg-[#49a078]/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <section class="mb-16">
+            <div id="loader-trend" class="text-center py-12 text-muted code-font">Загрузка данных...</div>
+            
+            <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden app-card p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px] transition-colors duration-400">
+                <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-[120px] pointer-events-none" style="background-color: var(--glow)"></div>
                 
                 <div class="space-y-6 max-w-xl z-10">
-                    <span id="txt-trend-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#49a078]/10 text-accent border border-[#49a078]/20 tracking-wide uppercase code-font">
+                    <span id="txt-trend-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold badge-live tracking-wide uppercase code-font transition-all">
                         🔥 ГЛАВНАЯ НОВОСТЬ ЧАСА
                     </span>
-                    <h1 id="trend-title" class="text-2xl md:text-4xl font-black tracking-tight text-[#dce1de] leading-tight hover:text-accent transition-colors"></h1>
-                    <p id="trend-description" class="text-muted-custom text-sm md:text-base leading-relaxed"></p>
-                    <div class="flex items-center space-x-4 text-xs text-muted-custom">
+                    <h1 id="trend-title" class="text-2xl md:text-4xl font-black tracking-tight leading-tight hover:text-accent transition-colors cursor-pointer"></h1>
+                    <p id="trend-description" class="text-muted text-sm md:text-base leading-relaxed"></p>
+                    <div class="flex items-center space-x-4 text-xs text-muted">
                         <span id="trend-date">Только что</span>
                         <span>•</span>
-                        <a id="trend-link" href="#" target="_blank" class="text-accent hover:underline font-semibold">Читать на источнике →</a>
+                        <a id="trend-link" href="#" target="_blank" class="text-accent hover:underline font-semibold transition-colors">Читать на источнике →</a>
                     </div>
                 </div>
 
                 <!-- Главная картинка -->
-                <div class="w-full md:w-[420px] h-64 md:h-80 rounded-2xl overflow-hidden border border-[#216869] shadow-2xl z-10 relative bg-[#1f2421] flex-shrink-0">
-                    <img id="trend-image" src="" alt="" class="w-full h-full object-cover hidden">
-                    <div id="trend-image-placeholder" class="w-full h-full bg-gradient-to-tr from-[#1f2421] to-[#216869] flex items-center justify-center text-xs font-bold text-accent code-font">[ TECH PULSE ]</div>
+                <div class="w-full md:w-[420px] h-64 md:h-80 rounded-2xl overflow-hidden border border-custom shadow-2xl z-10 relative flex-shrink-0">
+                    <img id="trend-image" src="" alt="" class="w-full h-full object-cover hidden" onerror="handleImageError(this)">
+                    <div id="trend-placeholder" class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-accent code-font transition-all">[ TECH PULSE ]</div>
                 </div>
             </div>
         </section>
 
-        <!-- ЛЕНТА СВЕЖИХ НОВОСТЕЙ -->
+        <!-- ЛЕНТА НОВОСТЕЙ -->
         <section>
-            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight text-[#dce1de] mb-8 flex items-center gap-2">
-                <span class="w-2 h-6 bg-[#49a078] rounded-full"></span> Лента новостей (Гаджеты, ПК, ИИ)
+            <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight mb-8 flex items-center gap-2">
+                <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
             </h2>
 
-            <div id="loader-list" class="text-center py-20 text-muted-custom code-font">Ищем самые свежие инсайды...</div>
+            <div id="loader-list" class="text-center py-20 text-muted code-font">Ищем свежие инсайды...</div>
             
             <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
         </section>
     </main>
 
-    <footer class="border-t border-[#216869] mt-20 bg-[#1f2421] text-muted-custom text-sm py-8 text-center">
-        <p id="txt-footer">© 2026 TechPulse. Работает на автоматических API-алгоритмах.</p>
+    <footer class="border-t border-custom mt-20 text-muted text-sm py-8 text-center transition-colors duration-400">
+        <p id="txt-footer"></p>
     </footer>
 
-    <!-- СКРИПТ ЯЗЫКОВ И ЗАГРУЗКИ КАРТИНОК -->
+    <!-- ЛОГИКА ПРИЛОЖЕНИЯ -->
     <script>
         let currentLang = 'ru';
+        let currentTheme = 'dark'; // По умолчанию ночь
 
-        const translations = {
+        // Текстовки
+        const dict = {
             ru: {
                 live: '• LIVE ОБНОВЛЕНИЕ',
                 trendBadge: '🔥 ГЛАВНАЯ НОВОСТЬ ЧАСА',
                 feedTitle: 'Лента новостей (Гаджеты, ПК, ИИ)',
-                footer: '© 2026 TechPulse. Работает на автоматических API-алгоритмах.',
-                loadingTrend: 'Загрузка главного тренда...',
-                loadingList: 'Ищем самые свежие инсайды...',
+                footer: `© ${new Date().getFullYear()} TechPulse. Работает на умных RSS-алгоритмах.`,
+                loading: 'Ищем свежие инсайды...',
                 readMore: 'Источник →',
-                error: 'Ошибка подключения к живой ленте. Перезагрузите страницу.'
+                error: 'Не удалось загрузить ленту. Пожалуйста, обновите страницу.'
             },
             en: {
                 live: '• LIVE UPDATE',
                 trendBadge: '🔥 TOP TECH TREND',
                 feedTitle: 'News Feed (Gadgets, PC, AI)',
-                footer: '© 2026 TechPulse. Powered by autonomous API algorithms.',
-                loadingTrend: 'Loading top trend...',
-                loadingList: 'Searching for the latest insights...',
+                footer: `© ${new Date().getFullYear()} TechPulse. Powered by smart RSS algorithms.`,
+                loading: 'Searching for the latest insights...',
                 readMore: 'Read More →',
-                error: 'Failed to connect to live feed. Please refresh.'
+                error: 'Failed to load feed. Please refresh the page.'
             }
         };
 
-        function updateUIStrings() {
-            const t = translations[currentLang];
-            document.getElementById('badge-live').innerText = t.live;
-            document.getElementById('txt-trend-badge').innerText = t.trendBadge;
-            document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-[#49a078] rounded-full"></span> ${t.feedTitle}`;
-            document.getElementById('txt-footer').innerText = t.footer;
+        // 1. Управление темами
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('theme-toggle-btn');
+            
+            if (currentTheme === 'dark') {
+                currentTheme = 'light';
+                body.classList.add('theme-light');
+                btn.innerText = '☀️';
+            } else {
+                currentTheme = 'dark';
+                body.classList.remove('theme-light');
+                btn.innerText = '🌙';
+            }
         }
 
+        // 2. Управление языками
         function changeLanguage(lang) {
             if (currentLang === lang) return;
             currentLang = lang;
 
-            const ruBtn = document.getElementById('lang-ru');
-            const enBtn = document.getElementById('lang-en');
+            const btnRu = document.getElementById('btn-ru');
+            const btnEn = document.getElementById('btn-en');
 
             if(lang === 'ru') {
-                ruBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all btn-active';
-                enBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted-custom hover:text-white';
+                btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
+                btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-white opacity-60';
             } else {
-                enBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all btn-active';
-                ruBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted-custom hover:text-white';
+                btnEn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent';
+                btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-white opacity-60';
             }
 
+            updateTexts();
+            fetchNews();
+        }
+
+        function updateTexts() {
+            const t = dict[currentLang];
+            document.getElementById('txt-live').innerText = t.live;
+            document.getElementById('txt-trend-badge').innerText = t.trendBadge;
+            document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> ${t.feedTitle}`;
+            document.getElementById('txt-footer').innerText = t.footer;
+            
+            document.getElementById('loader-trend').innerText = t.loading;
+            document.getElementById('loader-list').innerText = t.loading;
+        }
+
+        // 3. Обработка ошибок загрузки картинок (Критичный фикс)
+        function handleImageError(imgElement) {
+            imgElement.style.display = 'none'; // Скрываем битую картинку
+            // Показываем соседний элемент (заглушку)
+            if(imgElement.nextElementSibling) {
+                imgElement.nextElementSibling.style.display = 'flex';
+            }
+        }
+
+        // 4. Умный парсер новостей
+        async function fetchNews() {
+            // Показываем загрузку
             document.getElementById('loader-trend').classList.remove('hidden');
             document.getElementById('trend-container').classList.add('hidden');
             document.getElementById('loader-list').classList.remove('hidden');
             document.getElementById('news-grid').innerHTML = '';
 
-            document.getElementById('loader-trend').innerText = translations[lang].loadingTrend;
-            document.getElementById('loader-list').innerText = translations[lang].loadingList;
-
-            updateUIStrings();
-            loadNews();
-        }
-
-        async function loadNews() {
             try {
-                const category = currentLang === 'ru' ? 'technology' : 'tech';
-                const url = `https://api.spaceflightnewsapi.net/v4/articles/?limit=12&search=${category}`;
+                // Разные и надежные RSS ленты для RU и EN
+                const targetRSS = currentLang === 'ru' 
+                    ? 'https://3dnews.ru/news/rss/' 
+                    : 'https://techcrunch.com/feed/';
+
+                // Используем AllOrigins для обхода CORS + парсим XML вручную для 100% точности
+                const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetRSS)}`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
                 
-                if (!data.results || data.results.length === 0) throw new Error('No data');
-                const items = data.results;
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const items = Array.from(xmlDoc.querySelectorAll("item"));
 
-                // 1. Главный тренд
-                const main = items[0];
+                if (items.length === 0) throw new Error("Пустая лента");
+
+                // Функция чистки HTML тегов из текста
+                const cleanText = (str, len) => str.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').substring(0, len) + '...';
+
+                // Массив готовых новостей
+                const newsList = items.map(item => {
+                    const title = item.querySelector("title")?.textContent || "Tech News";
+                    const link = item.querySelector("link")?.textContent || "#";
+                    let desc = item.querySelector("description")?.textContent || "";
+                    
+                    // Умный поиск картинки
+                    let imgUrl = "";
+                    // 1. Ищем в стандартном теге enclosure
+                    const enclosure = item.querySelector("enclosure");
+                    if (enclosure) imgUrl = enclosure.getAttribute("url");
+                    
+                    // 2. Ищем в тегах media:content (для TechCrunch)
+                    if (!imgUrl) {
+                        const media = item.getElementsByTagNameNS("*", "content");
+                        if (media.length > 0) imgUrl = media[0].getAttribute("url");
+                    }
+                    
+                    // 3. Ищем внутри HTML-описания (для 3DNews)
+                    if (!imgUrl) {
+                        const match = desc.match(/<img[^>]+src="([^">]+)"/);
+                        if (match) imgUrl = match[1];
+                    }
+
+                    return { title, link, desc: cleanText(desc, 120), img: imgUrl };
+                });
+
+                // --- ОТРИСОВКА ---
+                const main = newsList[0];
                 document.getElementById('trend-title').innerText = main.title;
-                document.getElementById('trend-description').innerText = main.summary || 'Перейдите к источнику для детального ознакомления с материалом.';
-                document.getElementById('trend-link').href = main.url;
-                document.getElementById('trend-link').innerText = translations[currentLang].readMore;
+                document.getElementById('trend-title').onclick = () => window.open(main.link, '_blank');
+                document.getElementById('trend-description').innerText = main.desc;
+                document.getElementById('trend-link').href = main.link;
+                document.getElementById('trend-link').innerText = dict[currentLang].readMore;
 
-                const trendImg = document.getElementById('trend-image');
-                const trendPlaceholder = document.getElementById('trend-image-placeholder');
-                if (main.image_url) {
-                    trendImg.src = main.image_url;
-                    trendImg.classList.remove('hidden');
-                    trendPlaceholder.classList.add('hidden');
+                const tImg = document.getElementById('trend-image');
+                const tPlace = document.getElementById('trend-placeholder');
+                
+                if (main.img) {
+                    tImg.src = main.img;
+                    tImg.style.display = 'block';
+                    tPlace.style.display = 'none';
                 } else {
-                    trendImg.classList.add('hidden');
-                    trendPlaceholder.classList.remove('hidden');
+                    tImg.style.display = 'none';
+                    tPlace.style.display = 'flex';
                 }
 
                 document.getElementById('loader-trend').classList.add('hidden');
                 document.getElementById('trend-container').classList.remove('hidden');
 
-                // 2. Сетка новостей
+                // Отрисовка сетки
                 const grid = document.getElementById('news-grid');
-                grid.innerHTML = '';
                 document.getElementById('loader-list').classList.add('hidden');
 
-                items.slice(1).forEach((news, index) => {
-                    const descText = news.summary ? (news.summary.substring(0, 110) + '...') : 'Самые свежие детали и разбор релиза уже доступны на первоисточнике.';
-                    
-                    let cardImageHtml = `<div class="h-48 bg-gradient-to-br from-[#1f2421] to-[#216869] flex items-center justify-center border-b border-[#216869] text-xs font-bold text-accent code-font uppercase">[ TECH UPDATE ]</div>`;
-                    if (news.image_url) {
-                        cardImageHtml = `
-                            <div class="h-48 overflow-hidden border-b border-[#216869] bg-[#1f2421] relative">
-                                <img src="${news.image_url}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                            </div>
-                        `;
-                    }
+                newsList.slice(1, 10).forEach((news, i) => {
+                    // Генерируем блок картинки с проверкой onerror
+                    const imgBlock = news.img 
+                        ? `<img src="${news.img}" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                           <div class="w-full h-full placeholder-bg items-center justify-center text-xs font-bold text-accent code-font uppercase" style="display:none;">[ TECH UPDATE ]</div>`
+                        : `<div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-accent code-font uppercase">[ TECH UPDATE ]</div>`;
 
-                    const cardHtml = `
-                        <article class="tech-card custom-card border rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${index * 50}ms">
+                    grid.innerHTML += `
+                        <article class="tech-card app-card rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${i * 50}ms" onclick="window.open('${news.link}', '_blank')">
                             <div>
-                                ${cardImageHtml}
+                                <div class="h-48 overflow-hidden border-b border-custom relative">
+                                    ${imgBlock}
+                                </div>
                                 <div class="p-6 space-y-3">
-                                    <h3 class="text-base font-bold text-[#dce1de] leading-snug group-hover:text-accent transition-colors">
-                                        <a href="${news.url}" target="_blank">${news.title}</a>
-                                    </h3>
-                                    <p class="text-sm text-muted-custom leading-relaxed">${descText}</p>
+                                    <h3 class="text-base font-bold leading-snug group-hover:text-accent transition-colors">${news.title}</h3>
+                                    <p class="text-sm text-muted leading-relaxed">${news.desc}</p>
                                 </div>
                             </div>
-                            <div class="p-6 pt-0 flex items-center justify-between text-xs text-muted-custom">
+                            <div class="p-6 pt-0 flex items-center justify-between text-xs text-muted">
                                 <span>LIVE</span>
-                                <a href="${news.url}" target="_blank" class="hover:text-accent transition-colors font-semibold flex items-center gap-1">${translations[currentLang].readMore}</a>
+                                <span class="text-accent font-semibold flex items-center gap-1">${dict[currentLang].readMore}</span>
                             </div>
                         </article>
                     `;
-                    grid.innerHTML += cardHtml;
                 });
 
             } catch (error) {
-                console.error(error);
-                document.getElementById('loader-list').innerText = translations[currentLang].error;
+                console.error("Fetch Error:", error);
+                document.getElementById('loader-list').innerText = dict[currentLang].error;
             }
         }
 
+        // Запуск
         window.addEventListener('DOMContentLoaded', () => {
-            updateUIStrings();
-            loadNews();
+            updateTexts();
+            fetchNews();
         });
     </script>
 </body>
