@@ -87,7 +87,6 @@
             </div>
         </div>
 
-        <!-- Текст загрузки изменен -->
         <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка...</div>
         
         <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
@@ -113,8 +112,8 @@
         const dict = {
             ru: {
                 feedTitle: 'Лента новостей',
-                footer: `© ${new Date().getFullYear()} REALLY?. Только свежие факты.`,
-                loading: 'Загрузка...', // Коротко и ясно
+                footer: `© ${new Date().getFullYear()} REALLY?. Собственный сервер API.`,
+                loading: 'Загрузка...',
                 readMore: 'Читать',
                 error: 'Ошибка загрузки. Обновите страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
@@ -123,8 +122,8 @@
             },
             en: {
                 feedTitle: 'News Feed',
-                footer: `© ${new Date().getFullYear()} REALLY?. Only fresh facts.`,
-                loading: 'Loading...', // Коротко и ясно
+                footer: `© ${new Date().getFullYear()} REALLY?. Custom API Server.`,
+                loading: 'Loading...',
                 readMore: 'Read',
                 error: 'Loading error. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
@@ -205,7 +204,7 @@
             }
         }
 
-        // Бронебойный парсер картинок для TechCrunch
+        // ЖЕСТКИЙ ПАРСЕР: Выдирает картинки как сырой текст без неймспейсов
         function parseXML(xmlStr) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(xmlStr, "text/xml");
@@ -214,55 +213,55 @@
             return items.map(item => {
                 const title = item.querySelector("title")?.textContent || "Без названия";
                 const link = item.querySelector("link")?.textContent || "#";
+                const pubDate = item.querySelector("pubDate")?.textContent || "";
                 
-                const descNode = item.querySelector("description");
-                const contentNode = item.getElementsByTagNameNS("*", "encoded")[0]; // Улучшенный поиск TechCrunch контента
-                
-                const rawDesc = descNode ? descNode.textContent : "";
-                const rawContent = contentNode ? contentNode.textContent : "";
+                // Переводим весь блок новости в сырой текст для жесткого парсинга
+                const rawItemXML = new XMLSerializer().serializeToString(item);
                 
                 let imgUrl = "";
                 
-                // 1. Проверяем тег enclosure
-                const enclosure = item.querySelector("enclosure");
-                if (enclosure) imgUrl = enclosure.getAttribute("url");
+                // 1. Ищем media:content или media:thumbnail (Главная проблема TechCrunch)
+                const mediaMatch = rawItemXML.match(/<media:(?:content|thumbnail)[^>]+url=["']([^"']+)["']/i);
+                if (mediaMatch) imgUrl = mediaMatch[1];
                 
-                // 2. Проверяем media:content с учетом неймспейсов
+                // 2. Ищем классический enclosure
                 if (!imgUrl) {
-                    const media = item.getElementsByTagNameNS("*", "content")[0] || item.getElementsByTagNameNS("*", "thumbnail")[0];
-                    if (media) imgUrl = media.getAttribute("url");
+                    const encMatch = rawItemXML.match(/<enclosure[^>]+url=["']([^"']+)["']/i);
+                    if (encMatch) imgUrl = encMatch[1];
                 }
                 
-                // 3. Вытаскиваем прямо из HTML кода (если картинка внутри статьи)
+                // 3. Ищем картинку в самом тексте <img>
                 if (!imgUrl) {
-                    const combinedHtml = rawDesc + " " + rawContent;
-                    const imgMatch = combinedHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    const imgMatch = rawItemXML.match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (imgMatch) imgUrl = imgMatch[1];
                 }
 
-                // 4. Запасной вариант - регулярка по всему сырому XML узлу
-                if (!imgUrl) {
-                    const itemXml = new XMLSerializer().serializeToString(item);
-                    const mediaUrlMatch = itemXml.match(/(?:url|src)=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
-                    if (mediaUrlMatch) imgUrl = mediaUrlMatch[1];
-                }
-
-                // Очистка текста от тегов и лишних пробелов
+                // Очистка текста
+                let descNode = item.querySelector("description");
+                let rawDesc = descNode ? descNode.textContent : "";
+                
                 const tmp = document.createElement("div");
                 tmp.innerHTML = rawDesc;
                 let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
                 
-                if (cleanDesc.length < 15 && rawContent) {
-                    tmp.innerHTML = rawContent;
-                    cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
+                // Если текст слишком короткий, ищем контент глубже
+                if (cleanDesc.length < 15) {
+                    const contentNode = item.getElementsByTagNameNS("*", "encoded")[0];
+                    if (contentNode) {
+                        tmp.innerHTML = contentNode.textContent;
+                        cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
+                    }
                 }
+
+                // Убираем HTML-сущности из ссылки на картинку (типа &amp;)
+                imgUrl = imgUrl.replace(/&amp;/g, '&');
 
                 return {
                     title: title.trim(),
                     link: link,
                     desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
                     img: imgUrl,
-                    pubDate: item.querySelector("pubDate")?.textContent || ""
+                    pubDate: pubDate
                 };
             });
         }
@@ -275,8 +274,8 @@
             allNewsItems = [];
 
             try {
-                // Вызываем наш кэшированный бэкенд
-                const res = await fetch(`/api/news?lang=${currentLang}`);
+                // Добавлен обход кэша &t=Date.now(), чтобы ты увидел фикс мгновенно
+                const res = await fetch(`/api/news?lang=${currentLang}&t=${Date.now()}`);
                 const xmlText = await res.text();
                 
                 if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
