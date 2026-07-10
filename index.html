@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -21,7 +20,7 @@
             --btn-text: #dce1de;
         }
 
-        /* ДНЕВНАЯ ТЕМА (Лесная палитра) */
+        /* ДНЕВНАЯ ТЕМА */
         body.theme-light {
             --bg-color: #1f2421;
             --card-bg: rgba(33, 104, 105, 0.2);
@@ -72,9 +71,7 @@
             </a>
             
             <div class="flex items-center space-x-3">
-                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all" id="theme-toggle-btn" title="Сменить тему">
-                    🌙
-                </button>
+                <button onclick="toggleTheme()" class="app-card rounded-xl p-2 text-sm hover:opacity-80 transition-all" id="theme-toggle-btn" title="Сменить тему">🌙</button>
 
                 <div class="app-card rounded-xl p-1 flex">
                     <button id="btn-ru" onclick="changeLanguage('ru')" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-accent">RU</button>
@@ -85,7 +82,6 @@
     </header>
 
     <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-8">
-        
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <h2 id="txt-feed-title" class="text-2xl font-extrabold tracking-tight flex items-center gap-2">
                 <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
@@ -98,7 +94,7 @@
             </div>
         </div>
 
-        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка данных...</div>
+        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Синхронизация свежих данных...</div>
         
         <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
@@ -119,25 +115,24 @@
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
         const RENDER_BATCH_SIZE = 9;
-        let fetchError = false; // Флаг ошибки, чтобы фильтры не ломали UI
 
         const dict = {
             ru: {
                 feedTitle: 'Лента новостей',
-                footer: `© ${new Date().getFullYear()} REALLY?. Работает на умных API-алгоритмах.`,
-                loading: 'Сбор свежих новостей со всего мира...',
+                footer: `© ${new Date().getFullYear()} REALLY?. Только свежие факты.`,
+                loading: 'Получаем самые свежие новости...',
                 readMore: 'Читать',
-                error: 'Не удалось загрузить ленту. Источники временно недоступны.',
+                error: 'Источники недоступны. Обновите страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
-                empty: 'За этот период новостей пока нет.',
+                empty: 'За выбранный период новостей пока нет.',
                 loadingMore: 'Подгружаем еще...'
             },
             en: {
                 feedTitle: 'News Feed',
-                footer: `© ${new Date().getFullYear()} REALLY?. Powered by smart API algorithms.`,
-                loading: 'Gathering the latest world news...',
+                footer: `© ${new Date().getFullYear()} REALLY?. Only fresh facts.`,
+                loading: 'Fetching the latest live news...',
                 readMore: 'Read',
-                error: 'Failed to load feed. Sources are temporarily unavailable.',
+                error: 'Sources unavailable. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
                 empty: 'No news found for this period.',
                 loadingMore: 'Loading more...'
@@ -194,14 +189,15 @@
             }
         }
 
-        // Безопасный парсинг дат (не дает сбоев при кривых данных)
+        // Жесткая привязка парсера к текущей реальной дате (чтобы 100% корректно фильтровал)
         function parseAndFormatDate(dateString) {
             try {
+                // Приводим дату к безопасному формату ISO, который понимают все браузеры
                 let safeDateString = (dateString || "").replace(" ", "T");
                 const date = new Date(safeDateString);
                 
                 if (isNaN(date.getTime())) {
-                    return { label: "Недавно", category: 'today', timestamp: Date.now() };
+                    return { label: "Только что", category: 'today', timestamp: Date.now() };
                 }
 
                 const today = new Date();
@@ -218,12 +214,11 @@
                 
                 return { label: `${date.toLocaleDateString()} в ${time}`, category: 'older', timestamp: date.getTime() };
             } catch (e) {
-                return { label: "Недавно", category: 'today', timestamp: Date.now() };
+                return { label: "Только что", category: 'today', timestamp: Date.now() };
             }
         }
 
         async function fetchNews() {
-            fetchError = false;
             document.getElementById('loader-list').classList.remove('hidden');
             document.getElementById('loader-list').innerText = dict[currentLang].loading;
             document.getElementById('news-grid').innerHTML = '';
@@ -231,84 +226,57 @@
             allNewsItems = [];
 
             try {
-                // ПЕРВИЧНЫЙ ИСТОЧНИК: Стабильный NewsAPI 
-                const primaryUrl = currentLang === 'ru' 
-                    ? 'https://saurav.tech/NewsAPI/top-headlines/category/technology/ru.json'
-                    : 'https://saurav.tech/NewsAPI/top-headlines/category/technology/us.json';
-                
-                let isPrimarySuccess = false;
-                
-                try {
-                    const res = await fetch(primaryUrl);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'ok' && data.articles && data.articles.length > 0) {
-                            data.articles.forEach(item => {
-                                allNewsItems.push({
-                                    title: item.title,
-                                    link: item.url,
-                                    desc: item.description ? item.description.substring(0, 110) + '...' : 'Подробности читайте на источнике.',
-                                    img: item.urlToImage || "",
-                                    pubDate: item.publishedAt
-                                });
-                            });
-                            isPrimarySuccess = true;
-                        }
-                    }
-                } catch (e) { console.warn("Primary API failed, switching to Fallback."); }
+                // ИСПОЛЬЗУЕМ ТОЛЬКО ЖИВЫЕ RSS КАНАЛЫ (Никаких старых API)
+                const feedUrl = currentLang === 'ru' 
+                    ? 'https://www.ixbt.com/export/news.rss'
+                    : 'https://techcrunch.com/feed/';
 
-                // РЕЗЕРВНЫЙ ИСТОЧНИК: Если первый упал, тянем RSS
-                if (!isPrimarySuccess || allNewsItems.length === 0) {
-                    const fallbackUrl = currentLang === 'ru'
-                        ? 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.ixbt.com%2Fexport%2Fnews.rss'
-                        : 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftechcrunch.com%2Ffeed%2F';
-                    
-                    const resFb = await fetch(fallbackUrl);
-                    const dataFb = await resFb.json();
-                    
-                    if (dataFb.status === 'ok' && dataFb.items) {
-                        dataFb.items.forEach(item => {
-                            let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
-                            if (!imgUrl) {
-                                const match = (item.content || item.description || "").match(/<img[^>]+src="([^">]+)"/);
-                                if (match) imgUrl = match[1];
-                            }
-                            let cleanDesc = (item.description || item.content || "").replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ');
-                            allNewsItems.push({
-                                title: item.title,
-                                link: item.link,
-                                desc: cleanDesc.substring(0, 110) + '...',
-                                img: imgUrl,
-                                pubDate: item.pubDate
-                            });
+                // Ограничение в 30 свежих новостей, чтобы не перегружать 
+                const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=30`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.status === 'ok' && data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        let imgUrl = item.thumbnail || (item.enclosure && item.enclosure.link) || "";
+                        if (!imgUrl) {
+                            const match = (item.content || item.description || "").match(/<img[^>]+src="([^">]+)"/);
+                            if (match) imgUrl = match[1];
+                        }
+                        
+                        let cleanDesc = (item.description || item.content || "").replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
+                        
+                        const dateInfo = parseAndFormatDate(item.pubDate);
+
+                        allNewsItems.push({
+                            title: item.title,
+                            link: item.link,
+                            desc: cleanDesc.substring(0, 110) + '...',
+                            img: imgUrl,
+                            dateLabel: dateInfo.label,
+                            category: dateInfo.category,
+                            timestamp: dateInfo.timestamp
                         });
-                    }
+                    });
+                } else {
+                    throw new Error("Пустая RSS лента");
                 }
 
-                if (allNewsItems.length === 0) throw new Error("Нет данных из обоих источников");
-
-                // Присваиваем категории и сортируем по времени
-                allNewsItems.forEach(item => {
-                    const dateInfo = parseAndFormatDate(item.pubDate);
-                    item.dateLabel = dateInfo.label;
-                    item.category = dateInfo.category;
-                    item.timestamp = dateInfo.timestamp;
-                });
-
+                // Сортировка - самые свежие сверху
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
+                
                 applyFilter('all');
 
             } catch (error) {
                 console.error("Fetch Error:", error);
-                fetchError = true;
                 document.getElementById('loader-list').classList.remove('hidden');
                 document.getElementById('loader-list').innerText = dict[currentLang].error;
             }
         }
 
         function applyFilter(filterType) {
-            // Блокируем фильтрацию, если произошла ошибка загрузки
-            if (fetchError || allNewsItems.length === 0) return; 
+            if (allNewsItems.length === 0) return; 
 
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${filterType}`).classList.add('active');
@@ -353,7 +321,7 @@
                         <a href="${news.link}" target="_blank" class="flex flex-col h-full cursor-pointer outline-none block">
                             <div class="h-48 overflow-hidden border-b border-custom relative">
                                 ${imgBlock}
-                                <div class="absolute top-3 left-3 bg-black/70 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-white shadow-lg">
+                                <div class="absolute top-3 left-3 bg-[#0a1128]/90 backdrop-blur-md border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)] shadow-lg">
                                     ${news.dateLabel}
                                 </div>
                             </div>
