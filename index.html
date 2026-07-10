@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -177,7 +178,6 @@
             if(imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
         }
 
-        // Исправлено: Адаптивное форматирование времени под язык
         function parseAndFormatDate(dateString) {
             try {
                 const date = new Date(dateString || Date.now());
@@ -190,7 +190,6 @@
                 const isToday = date.toDateString() === today.toDateString();
                 const isYesterday = date.toDateString() === yesterday.toDateString();
                 
-                // Настройка: 24-часовой для RU, 12-часовой (AM/PM) для EN
                 const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
                 const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: currentLang === 'en' };
                 const time = date.toLocaleTimeString(locale, timeOpts);
@@ -205,7 +204,7 @@
             }
         }
 
-        // Исправлено: Мощный парсинг картинок + удаление пустых строк
+        // ПОЛНОСТЬЮ ПЕРЕПИСАННЫЙ ПАРСЕР XML (DOM-метод)
         function parseXML(xmlStr) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(xmlStr, "text/xml");
@@ -214,40 +213,46 @@
             return items.map(item => {
                 const title = item.querySelector("title")?.textContent || "Без названия";
                 const link = item.querySelector("link")?.textContent || "#";
-                let desc = item.querySelector("description")?.textContent || "";
+                
+                const descNode = item.querySelector("description");
+                const contentNode = item.getElementsByTagName("content:encoded")[0] || item.getElementsByTagNameNS("*", "content")[0];
+                
+                const rawDesc = descNode ? descNode.textContent : "";
+                const rawContent = contentNode ? contentNode.textContent : "";
+                
+                // Ищем картинку всеми способами
                 let imgUrl = "";
-
-                // Шаг 1: Стандартный тег
                 const enclosure = item.querySelector("enclosure");
                 if (enclosure) imgUrl = enclosure.getAttribute("url");
                 
-                // Шаг 2: Тег медиа (TechCrunch)
                 if (!imgUrl) {
                     const media = item.getElementsByTagName("media:content")[0] || item.getElementsByTagName("media:thumbnail")[0];
                     if (media) imgUrl = media.getAttribute("url");
                 }
                 
-                // Шаг 3: Поиск прямо в HTML коде новости (TechCrunch запасной вариант)
+                // Виртуальный DOM для безопасного парсинга HTML (без регулярок)
+                const tmp = document.createElement("div");
+                tmp.innerHTML = rawDesc + " " + rawContent; // Загружаем весь HTML
+                
                 if (!imgUrl) {
-                    const contentEncoded = item.getElementsByTagName("content:encoded")[0]?.textContent || "";
-                    const matchContent = contentEncoded.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (matchContent) imgUrl = matchContent[1];
+                    const img = tmp.querySelector("img");
+                    if (img) imgUrl = img.getAttribute("src");
                 }
 
-                // Шаг 4: Поиск в description
-                if (!imgUrl) {
-                    const matchDesc = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (matchDesc) imgUrl = matchDesc[1];
+                // Вытаскиваем чистый текст (innerText/textContent сам удаляет теги)
+                tmp.innerHTML = rawDesc;
+                let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
+                
+                // Если iXBT выдал пустой текст (была только картинка), берем текст из content:encoded
+                if (cleanDesc.length < 15 && rawContent) {
+                    tmp.innerHTML = rawContent;
+                    cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
                 }
-
-                // Исправлено: Чистим от тегов, пробелов и УДАЛЯЕМ лишние переносы строк
-                let cleanDesc = desc.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
-                cleanDesc = cleanDesc.replace(/\s+/g, ' ').trim(); 
 
                 return {
                     title: title.trim(),
                     link: link,
-                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : cleanDesc,
+                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
                     img: imgUrl,
                     pubDate: item.querySelector("pubDate")?.textContent || ""
                 };
@@ -262,7 +267,6 @@
             allNewsItems = [];
 
             try {
-                // Связь с твоим сервером api/news.js
                 const res = await fetch(`/api/news?lang=${currentLang}`);
                 const xmlText = await res.text();
                 
