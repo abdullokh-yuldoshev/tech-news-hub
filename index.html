@@ -51,7 +51,7 @@
 
     <main class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto py-12">
         
-        <!-- ГЛАВНЫЙ ТРЕНД (ПОДТЯГИВАЕТСЯ АВТОМАТИЧЕСКИ) -->
+        <!-- ГЛАВНЫЙ ТРЕНД -->
         <section class="mb-16" id="top-trend-section">
             <div id="loader-trend" class="text-center py-12 text-gray-500 code-font">Загрузка главного тренда...</div>
             <div id="trend-container" class="hidden relative rounded-3xl overflow-hidden bg-gradient-to-br from-gray-900 to-slate-900 border border-gray-800 p-6 md:p-12 flex flex-col md:flex-row gap-8 items-center justify-between min-h-[400px]">
@@ -79,7 +79,6 @@
 
             <div id="loader-list" class="text-center py-20 text-gray-500 code-font">Ищем самые свежие инсайды...</div>
             
-            <!-- Сюда скрипт сам добавит карточки -->
             <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
         </section>
     </main>
@@ -88,81 +87,88 @@
         <p>© 2026 TechPulse. Работает на автоматических RSS-алгоритмах.</p>
     </footer>
 
-    <!-- СКРИПТ АВТОПОДТЯГИВАНИЯ НОВОСТЕЙ -->
+    <!-- СКРИПТ С ИСПРАВЛЕННЫМ ОБХОДОМ CORS -->
     <script>
-        // Используем открытые проверенные RSS ленты новостей технологий
-        const RSS_FEED_URL = 'https://news.yandex.ru/computers.rss'; // Пример стабильного фида про гаджеты и ПК
-        const API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_FEED_URL)}`;
+        const RSS_FEED = 'https://www.ixbt.com/export/news.rss'; 
+        const API_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(RSS_FEED)}`;
 
         async function loadNews() {
             try {
                 const response = await fetch(API_URL);
                 const data = await response.json();
-
-                if (data.status !== 'ok') throw new Error('Ошибка загрузки фида');
-
-                const items = data.items;
                 
-                // 1. Наполняем Главный тренд (первая новость из списка)
-                if (items.length > 0) {
-                    const mainNews = items[0];
-                    document.getElementById('trend-title').innerText = mainNews.title;
-                    // Очищаем описание от html-тегов, если они есть
-                    document.getElementById('trend-description').innerText = mainNews.description.replace(/<[^>]*>/g, '').substring(0, 250) + '...';
-                    document.getElementById('trend-date').innerText = new Date(mainNews.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' сегодня';
-                    document.getElementById('trend-link').href = mainNews.link;
-                    
-                    document.getElementById('loader-trend').classList.add('hidden');
-                    document.getElementById('trend-container').classList.remove('hidden');
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const items = xmlDoc.getElementsByTagName("item");
+
+                if (items.length === 0) throw new Error('Лента пуста');
+
+                function cleanText(text, length) {
+                    return text.replace(/<[^>]*>/g, '').replace(/&quot;/g, '"').substring(0, length) + '...';
                 }
 
-                // 2. Наполняем остальную сетку новостей
+                // 1. Главная новость
+                const firstItem = items[0];
+                const mainTitle = firstItem.getElementsByTagName("title")[0].textContent;
+                const mainDesc = firstItem.getElementsByTagName("description")[0].textContent;
+                const mainLink = firstItem.getElementsByTagName("link")[0].textContent;
+
+                document.getElementById('trend-title').innerText = mainTitle;
+                document.getElementById('trend-description').innerText = cleanText(mainDesc, 200);
+                document.getElementById('trend-date').innerText = 'Только что';
+                document.getElementById('trend-link').href = mainLink;
+                
+                document.getElementById('loader-trend').classList.add('hidden');
+                document.getElementById('trend-container').classList.remove('hidden');
+
+                // 2. Сетка остальных новостей
                 const grid = document.getElementById('news-grid');
+                grid.innerHTML = '';
                 document.getElementById('loader-list').classList.add('hidden');
 
-                // Пропускаем первую новость, так как она уже в тренде
-                items.slice(1, 10).forEach((news, index) => {
-                    // Создаем случайный красивый градиент-заглушку вместо картинок для стиля
-                    const gradients = [
-                        'from-slate-800 to-indigo-950',
-                        'from-slate-800 to-purple-950',
-                        'from-slate-800 to-slate-900',
-                        'from-indigo-950 to-purple-900'
-                    ];
-                    const randomGradient = gradients[index % gradients.length];
+                const gradients = [
+                    'from-slate-800 to-indigo-950',
+                    'from-slate-800 to-purple-950',
+                    'from-slate-800 to-slate-900',
+                    'from-indigo-950 to-purple-900'
+                ];
+
+                for (let i = 1; i < Math.min(items.length, 10); i++) {
+                    const item = items[i];
+                    const title = item.getElementsByTagName("title")[0].textContent;
+                    const desc = item.getElementsByTagName("description")[0].textContent;
+                    const link = item.getElementsByTagName("link")[0].textContent;
                     
-                    const cleanDesc = news.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...';
-                    const time = new Date(news.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const randomGradient = gradients[i % gradients.length];
 
                     const cardHtml = `
-                        <article class="tech-card bg-gray-900/50 border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${index * 100}ms">
+                        <article class="tech-card bg-gray-900/50 border border-gray-800/80 rounded-2xl overflow-hidden flex flex-col justify-between group cursor-pointer" style="animation-delay: ${i * 50}ms">
                             <div>
                                 <div class="h-40 bg-gradient-to-br ${randomGradient} flex items-center justify-center border-b border-gray-800 relative">
-                                    <span class="text-[10px] font-bold text-indigo-400 tracking-widest code-font uppercase">[ TECH UPDATE ]</span>
+                                    <span class="text-[10px] font-bold text-indigo-400 tracking-widest code-font uppercase">[ LIVE UPDATE ]</span>
                                 </div>
                                 <div class="p-6 space-y-3">
                                     <h3 class="text-lg font-bold text-gray-100 leading-snug group-hover:text-indigo-400 transition-colors">
-                                        <a href="${news.link}" target="_blank">${news.title}</a>
+                                        <a href="${link}" target="_blank">${title}</a>
                                     </h3>
-                                    <p class="text-sm text-gray-400 leading-relaxed">${cleanDesc}</p>
+                                    <p class="text-sm text-gray-400 leading-relaxed">${cleanText(desc, 120)}</p>
                                 </div>
                             </div>
                             <div class="p-6 pt-0 flex items-center justify-between text-xs text-gray-500">
-                                <span>${time} сегодня</span>
-                                <a href="${news.link}" target="_blank" class="hover:text-indigo-400 transition-colors font-semibold flex items-center gap-1">Источник →</a>
+                                <span>Сегодня</span>
+                                <a href="${link}" target="_blank" class="hover:text-indigo-400 transition-colors font-semibold flex items-center gap-1">Источник →</a>
                             </div>
                         </article>
                     `;
                     grid.innerHTML += cardHtml;
-                });
+                }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('loader-list').innerText = 'Не удалось загрузить живые новости. Попробуйте позже.';
+                document.getElementById('loader-list').innerText = 'Ошибка подключения к живой ленте. Перезагрузите страницу.';
             }
         }
 
-        // Запуск при загрузке страницы
         window.addEventListener('DOMContentLoaded', loadNews);
     </script>
 </body>
