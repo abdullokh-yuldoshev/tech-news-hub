@@ -177,9 +177,9 @@
             if(imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
         }
 
+        // Исправлено: Адаптивное форматирование времени под язык
         function parseAndFormatDate(dateString) {
             try {
-                // Исправлено: убрали ломающий replace, теперь штатный Date читает RSS как положено
                 const date = new Date(dateString || Date.now());
                 if (isNaN(date.getTime())) return { label: "Только что", category: 'today', timestamp: Date.now() };
 
@@ -189,16 +189,23 @@
 
                 const isToday = date.toDateString() === today.toDateString();
                 const isYesterday = date.toDateString() === yesterday.toDateString();
-                const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                // Настройка: 24-часовой для RU, 12-часовой (AM/PM) для EN
+                const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
+                const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: currentLang === 'en' };
+                const time = date.toLocaleTimeString(locale, timeOpts);
                 
                 if (isToday) return { label: `${dict[currentLang].filterToday}, ${time}`, category: 'today', timestamp: date.getTime() };
                 if (isYesterday) return { label: `${dict[currentLang].filterYesterday}, ${time}`, category: 'yesterday', timestamp: date.getTime() };
-                return { label: `${date.toLocaleDateString()} в ${time}`, category: 'older', timestamp: date.getTime() };
+                
+                const dateSeparator = currentLang === 'ru' ? 'в' : 'at';
+                return { label: `${date.toLocaleDateString(locale)} ${dateSeparator} ${time}`, category: 'older', timestamp: date.getTime() };
             } catch (e) {
                 return { label: "Только что", category: 'today', timestamp: Date.now() };
             }
         }
 
+        // Исправлено: Мощный парсинг картинок + удаление пустых строк
         function parseXML(xmlStr) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(xmlStr, "text/xml");
@@ -210,23 +217,37 @@
                 let desc = item.querySelector("description")?.textContent || "";
                 let imgUrl = "";
 
+                // Шаг 1: Стандартный тег
                 const enclosure = item.querySelector("enclosure");
                 if (enclosure) imgUrl = enclosure.getAttribute("url");
+                
+                // Шаг 2: Тег медиа (TechCrunch)
                 if (!imgUrl) {
-                    const media = item.getElementsByTagNameNS("*", "content")[0];
+                    const media = item.getElementsByTagName("media:content")[0] || item.getElementsByTagName("media:thumbnail")[0];
                     if (media) imgUrl = media.getAttribute("url");
                 }
+                
+                // Шаг 3: Поиск прямо в HTML коде новости (TechCrunch запасной вариант)
                 if (!imgUrl) {
-                    const match = desc.match(/<img[^>]+src="([^">]+)"/);
-                    if (match) imgUrl = match[1];
+                    const contentEncoded = item.getElementsByTagName("content:encoded")[0]?.textContent || "";
+                    const matchContent = contentEncoded.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (matchContent) imgUrl = matchContent[1];
                 }
 
+                // Шаг 4: Поиск в description
+                if (!imgUrl) {
+                    const matchDesc = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (matchDesc) imgUrl = matchDesc[1];
+                }
+
+                // Исправлено: Чистим от тегов, пробелов и УДАЛЯЕМ лишние переносы строк
                 let cleanDesc = desc.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
+                cleanDesc = cleanDesc.replace(/\s+/g, ' ').trim(); 
 
                 return {
-                    title: title,
+                    title: title.trim(),
                     link: link,
-                    desc: cleanDesc.substring(0, 110) + '...',
+                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : cleanDesc,
                     img: imgUrl,
                     pubDate: item.querySelector("pubDate")?.textContent || ""
                 };
