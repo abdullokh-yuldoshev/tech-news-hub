@@ -109,8 +109,12 @@
         let allNewsItems = []; 
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
+        let currentFilterType = 'all';
         let activeFetchToken = 0;
         let activeFetchController = null;
+        let currentSourceSlot = 0;
+        let hasMoreSourceSlots = true;
+        let isLoadingOlder = false;
         const RENDER_BATCH_SIZE = 9;
         const NEWS_CACHE_PREFIX = 'really_news_cache_v2_';
         const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -136,6 +140,7 @@
                 feedTitle: 'Лента новостей',
                 footer: `© ${new Date().getFullYear()} REALLY?. Собственный сервер API.`,
                 loading: 'Загрузка...',
+                loadingMore: 'Загружаем старые новости...',
                 readMore: 'Читать',
                 error: 'Ошибка загрузки. Обновите страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
@@ -147,6 +152,7 @@
                 feedTitle: 'News Feed',
                 footer: `© ${new Date().getFullYear()} REALLY?. Custom API Server.`,
                 loading: 'Loading...',
+                loadingMore: 'Loading older news...',
                 readMore: 'Read',
                 error: 'Loading error. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
@@ -295,7 +301,7 @@
             return keywords.some(keyword => text.includes(keyword));
         }
 
-        // Универсальный парсер на базе нативного DOMParser для безопасного и точного чтения RSS (iXBT) и Atom (The Verge)
+        // Универсальный парсер на базе нативного DOMParser для безопасного и точного чтения RSS/Atom
         function parseXML(xmlStr) {
             const items = [];
             const parser = new DOMParser();
@@ -303,7 +309,7 @@
             const nodes = xmlDoc.querySelectorAll("item, entry");
 
             for (const node of nodes) {
-                if (items.length >= 24) break;
+            if (items.length >= 60) break;
 
                 // Заголовок
                 const titleNode = node.querySelector("title");
@@ -406,9 +412,65 @@
             return items;
         }
 
+        function getFilteredItemsByType(filterType) {
+            if (filterType === 'all') return [...allNewsItems];
+            return allNewsItems.filter(item => item.category === filterType);
+        }
+
+        function getCurrentFilterType() {
+            if (document.getElementById('filter-today').classList.contains('active')) return 'today';
+            if (document.getElementById('filter-yesterday').classList.contains('active')) return 'yesterday';
+            return 'all';
+        }
+
+        function mergeNewsItems(existingItems, incomingItems) {
+            const byLink = new Map();
+            existingItems.forEach(item => {
+                if (item.link) byLink.set(item.link, item);
+            });
+            incomingItems.forEach(item => {
+                if (item.link && !byLink.has(item.link)) {
+                    byLink.set(item.link, item);
+                }
+            });
+            return Array.from(byLink.values()).sort((a, b) => b.timestamp - a.timestamp);
+        }
+
+        function setLoadMoreLoadingState(isLoading) {
+            const loadBtn = document.getElementById('btn-load-more');
+            if (isLoading) {
+                loadBtn.disabled = true;
+                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                loadBtn.innerText = dict[currentLang].loadingMore;
+            } else {
+                loadBtn.disabled = false;
+                loadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                loadBtn.innerText = dict[currentLang].btnLoadMore;
+            }
+        }
+
+        async function fetchFeedSlot(requestLang, slot, signal) {
+            const res = await fetch(`/api/news?lang=${requestLang}&slot=${slot}`, { signal });
+            const xmlText = await res.text();
+            if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
+
+            const hasMore = res.headers.get('X-Feed-Has-More') === '1';
+            const rawItems = parseXML(xmlText).filter(item => isTechNewsItem(item, requestLang));
+            const normalizedItems = rawItems.map(item => {
+                const dateInfo = parseAndFormatDate(item.pubDate);
+                return { ...item, dateLabel: dateInfo.label, category: dateInfo.category, timestamp: dateInfo.timestamp };
+            });
+
+            return { items: normalizedItems, hasMore };
+        }
+
         async function fetchNews(lang = currentLang) {
             const requestLang = lang === 'en' ? 'en' : 'ru';
             const requestToken = ++activeFetchToken;
+            currentSourceSlot = 0;
+            hasMoreSourceSlots = true;
+            isLoadingOlder = false;
+            currentFilterType = 'all';
 
             if (activeFetchController) {
                 activeFetchController.abort();
@@ -430,20 +492,12 @@
             }
 
             try {
-                // Запрашиваем наш бэкенд
-                const res = await fetch(`/api/news?lang=${requestLang}`, { signal: activeFetchController.signal });
-                const xmlText = await res.text();
-                
-                if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
-
-                const rawItems = parseXML(xmlText).filter(item => isTechNewsItem(item, requestLang));
+                const { items, hasMore } = await fetchFeedSlot(requestLang, 0, activeFetchController.signal);
 
                 if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
 
-                rawItems.forEach(item => {
-                    const dateInfo = parseAndFormatDate(item.pubDate);
-                    allNewsItems.push({ ...item, dateLabel: dateInfo.label, category: dateInfo.category, timestamp: dateInfo.timestamp });
-                });
+                hasMoreSourceSlots = hasMore;
+                allNewsItems = items;
 
                 if (allNewsItems.length === 0) throw new Error("Лента пуста");
 
@@ -459,12 +513,50 @@
             }
         }
 
+        async function loadOlderNews() {
+            if (isLoadingOlder || !hasMoreSourceSlots) return;
+            isLoadingOlder = true;
+            setLoadMoreLoadingState(true);
+
+            try {
+                const requestLang = currentLang;
+                const nextSlot = currentSourceSlot + 1;
+                const { items, hasMore } = await fetchFeedSlot(requestLang, nextSlot);
+
+                currentSourceSlot = nextSlot;
+                hasMoreSourceSlots = hasMore;
+
+                const previousRenderedCount = currentRenderIndex;
+                const oldestLoadedTs = allNewsItems.length > 0
+                    ? Math.min(...allNewsItems.map(item => item.timestamp || 0))
+                    : Number.MAX_SAFE_INTEGER;
+                const olderItems = items.filter(item => (item.timestamp || 0) <= oldestLoadedTs);
+
+                allNewsItems = mergeNewsItems(allNewsItems, olderItems);
+                setCachedNews(requestLang, allNewsItems);
+
+                filteredNewsItems = getFilteredItemsByType(currentFilterType);
+
+                if (filteredNewsItems.length > previousRenderedCount) {
+                    renderNextBatch();
+                }
+            } catch (error) {
+                console.error("Ошибка догрузки:", error);
+            } finally {
+                isLoadingOlder = false;
+                if (hasMoreSourceSlots) {
+                    setLoadMoreLoadingState(false);
+                }
+            }
+        }
+
         function applyFilter(filterType) {
             if (allNewsItems.length === 0) return; 
+            currentFilterType = filterType;
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${filterType}`).classList.add('active');
 
-            filteredNewsItems = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => item.category === filterType);
+            filteredNewsItems = getFilteredItemsByType(filterType);
 
             document.getElementById('loader-list').classList.add('hidden');
             document.getElementById('news-grid').innerHTML = '';
@@ -489,7 +581,12 @@
         }
 
         function renderNextBatch() {
-            if (currentRenderIndex >= filteredNewsItems.length) return;
+            if (currentRenderIndex >= filteredNewsItems.length) {
+                if (hasMoreSourceSlots) {
+                    loadOlderNews();
+                }
+                return;
+            }
 
             const grid = document.getElementById('news-grid');
             const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
@@ -539,9 +636,15 @@
             
             if (currentRenderIndex >= filteredNewsItems.length) {
                 loadContainer.classList.remove('hidden');
-                loadBtn.innerText = dict[currentLang].noMoreNews;
-                loadBtn.disabled = true;
-                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                if (hasMoreSourceSlots) {
+                    loadBtn.innerText = dict[currentLang].btnLoadMore;
+                    loadBtn.disabled = false;
+                    loadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    loadBtn.innerText = dict[currentLang].noMoreNews;
+                    loadBtn.disabled = true;
+                    loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
             } else {
                 loadContainer.classList.remove('hidden');
             }
