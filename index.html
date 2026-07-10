@@ -87,7 +87,8 @@
             </div>
         </div>
 
-        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Запрашиваем данные с нашего сервера...</div>
+        <!-- Текст загрузки изменен -->
+        <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка...</div>
         
         <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
@@ -112,23 +113,23 @@
         const dict = {
             ru: {
                 feedTitle: 'Лента новостей',
-                footer: `© ${new Date().getFullYear()} REALLY?. Собственный сервер API.`,
-                loading: 'Получаем данные с личного сервера...',
+                footer: `© ${new Date().getFullYear()} REALLY?. Только свежие факты.`,
+                loading: 'Загрузка...', // Коротко и ясно
                 readMore: 'Читать',
-                error: 'Ошибка связи с нашим сервером. Обновите страницу.',
+                error: 'Ошибка загрузки. Обновите страницу.',
                 filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
                 empty: 'За этот период новостей пока нет.',
-                loadingMore: 'Подгружаем еще...'
+                loadingMore: 'Загрузка...'
             },
             en: {
                 feedTitle: 'News Feed',
-                footer: `© ${new Date().getFullYear()} REALLY?. Custom API Server.`,
-                loading: 'Fetching data from personal server...',
+                footer: `© ${new Date().getFullYear()} REALLY?. Only fresh facts.`,
+                loading: 'Loading...', // Коротко и ясно
                 readMore: 'Read',
-                error: 'Server connection error. Please refresh.',
+                error: 'Loading error. Please refresh.',
                 filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
                 empty: 'No news found for this period.',
-                loadingMore: 'Loading more...'
+                loadingMore: 'Loading...'
             }
         };
 
@@ -204,7 +205,7 @@
             }
         }
 
-        // ПОЛНОСТЬЮ ПЕРЕПИСАННЫЙ ПАРСЕР XML (DOM-метод)
+        // Бронебойный парсер картинок для TechCrunch
         function parseXML(xmlStr) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(xmlStr, "text/xml");
@@ -215,35 +216,42 @@
                 const link = item.querySelector("link")?.textContent || "#";
                 
                 const descNode = item.querySelector("description");
-                const contentNode = item.getElementsByTagName("content:encoded")[0] || item.getElementsByTagNameNS("*", "content")[0];
+                const contentNode = item.getElementsByTagNameNS("*", "encoded")[0]; // Улучшенный поиск TechCrunch контента
                 
                 const rawDesc = descNode ? descNode.textContent : "";
                 const rawContent = contentNode ? contentNode.textContent : "";
                 
-                // Ищем картинку всеми способами
                 let imgUrl = "";
+                
+                // 1. Проверяем тег enclosure
                 const enclosure = item.querySelector("enclosure");
                 if (enclosure) imgUrl = enclosure.getAttribute("url");
                 
+                // 2. Проверяем media:content с учетом неймспейсов
                 if (!imgUrl) {
-                    const media = item.getElementsByTagName("media:content")[0] || item.getElementsByTagName("media:thumbnail")[0];
+                    const media = item.getElementsByTagNameNS("*", "content")[0] || item.getElementsByTagNameNS("*", "thumbnail")[0];
                     if (media) imgUrl = media.getAttribute("url");
                 }
                 
-                // Виртуальный DOM для безопасного парсинга HTML (без регулярок)
-                const tmp = document.createElement("div");
-                tmp.innerHTML = rawDesc + " " + rawContent; // Загружаем весь HTML
-                
+                // 3. Вытаскиваем прямо из HTML кода (если картинка внутри статьи)
                 if (!imgUrl) {
-                    const img = tmp.querySelector("img");
-                    if (img) imgUrl = img.getAttribute("src");
+                    const combinedHtml = rawDesc + " " + rawContent;
+                    const imgMatch = combinedHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (imgMatch) imgUrl = imgMatch[1];
                 }
 
-                // Вытаскиваем чистый текст (innerText/textContent сам удаляет теги)
+                // 4. Запасной вариант - регулярка по всему сырому XML узлу
+                if (!imgUrl) {
+                    const itemXml = new XMLSerializer().serializeToString(item);
+                    const mediaUrlMatch = itemXml.match(/(?:url|src)=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
+                    if (mediaUrlMatch) imgUrl = mediaUrlMatch[1];
+                }
+
+                // Очистка текста от тегов и лишних пробелов
+                const tmp = document.createElement("div");
                 tmp.innerHTML = rawDesc;
                 let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
                 
-                // Если iXBT выдал пустой текст (была только картинка), берем текст из content:encoded
                 if (cleanDesc.length < 15 && rawContent) {
                     tmp.innerHTML = rawContent;
                     cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
@@ -267,6 +275,7 @@
             allNewsItems = [];
 
             try {
+                // Вызываем наш кэшированный бэкенд
                 const res = await fetch(`/api/news?lang=${currentLang}`);
                 const xmlText = await res.text();
                 
