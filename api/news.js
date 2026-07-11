@@ -1,4 +1,4 @@
-const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
+const FEED_CACHE_TTL_MS = 8 * 60 * 1000;
 const feedCache = {};
 
 const FEED_SLOTS = {
@@ -20,7 +20,7 @@ const FEED_SLOTS = {
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600');
+    res.setHeader('Cache-Control', 'public, max-age=180, s-maxage=480, stale-while-revalidate=900');
 
     const lang = req.query.lang || 'ru';
     const normalizedLang = lang === 'en' ? 'en' : 'ru';

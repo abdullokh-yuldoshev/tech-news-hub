@@ -10,25 +10,25 @@
     
     <style>
         :root {
-            --bg-color: #0a1128;
-            --card-bg: #001f54;
-            --card-border: #034078;
-            --accent: #034078;
-            --text-main: #dce1de;
-            --text-muted: rgba(220, 225, 222, 0.65); 
-            --glow: rgba(3, 64, 120, 0.4);
-            --btn-text: #dce1de;
+            --bg-color: #0d1b2a;
+            --card-bg: #1b263b;
+            --card-border: #415a77;
+            --accent: #415a77;
+            --text-main: #e0e1dd;
+            --text-muted: #778da9;
+            --glow: rgba(65, 90, 119, 0.45);
+            --btn-text: #e0e1dd;
         }
 
         body.theme-light {
-            --bg-color: #1f2421;
-            --card-bg: rgba(33, 104, 105, 0.2);
-            --card-border: #216869;
-            --accent: #49a078;
-            --text-main: #dce1de;
-            --text-muted: #9cc5a1;
-            --glow: rgba(73, 160, 120, 0.4);
-            --btn-text: #1f2421;
+            --bg-color: #fffcf2;
+            --card-bg: #ccc5b9;
+            --card-border: #403d39;
+            --accent: #eb5e28;
+            --text-main: #252422;
+            --text-muted: #403d39;
+            --glow: rgba(235, 94, 40, 0.25);
+            --btn-text: #fffcf2;
         }
 
         body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.4s ease, color 0.4s ease; }
@@ -516,7 +516,13 @@
 
                 // Если в атрибутах нет, ищем в HTML-контенте или описании
                 const descNode = node.querySelector("description, content, summary");
-                const rawDesc = descNode ? descNode.textContent : "";
+                let rawDesc = descNode ? descNode.textContent : "";
+
+                // Fallback: content:encoded (присутствует в RSS 2.0 лентах, даёт полный текст)
+                if (!rawDesc.trim()) {
+                    const encodedNode = node.getElementsByTagNameNS('*', 'encoded')[0];
+                    if (encodedNode) rawDesc = encodedNode.textContent || "";
+                }
 
                 const categories = [];
                 const categoryNodes = node.querySelectorAll("category");
@@ -538,10 +544,20 @@
                 tmp.innerHTML = rawDesc;
                 let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
 
+                // Если description был только из картинки или пустой — берём первые слова из content:encoded
+                if (!cleanDesc && !rawDesc.trim()) {
+                    const encodedNode = node.getElementsByTagNameNS('*', 'encoded')[0];
+                    if (encodedNode) {
+                        const encTmp = document.createElement("div");
+                        encTmp.innerHTML = encodedNode.textContent || "";
+                        cleanDesc = (encTmp.textContent || encTmp.innerText || "").replace(/\s+/g, ' ').trim();
+                    }
+                }
+
                 items.push({
                     title: title,
                     link: link,
-                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : (cleanDesc || 'Подробности читайте на первоисточнике.'),
+                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : cleanDesc,
                     img: safeAbsoluteUrl(imgUrl, ''),
                     categories: categories,
                     pubDate: pubDate
@@ -605,7 +621,7 @@
         }
 
         async function fetchFeedSlot(requestLang, slot, signal) {
-            const res = await fetch(`/api/news?lang=${requestLang}&slot=${slot}`, { signal, cache: 'no-store' });
+            const res = await fetch(`/api/news?lang=${requestLang}&slot=${slot}`, { signal });
             const xmlText = await res.text();
             if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
 
@@ -634,22 +650,34 @@
         }
 
         async function ensureTopicPrefill(requestLang, signal) {
-            if (isWarmingTopics) return;
+            if (isWarmingTopics || !hasMoreSourceSlots) return;
             isWarmingTopics = true;
 
             try {
-                while (hasMoreSourceSlots && !hasEnoughPerTopic(allNewsItems, 10)) {
-                    const nextSlot = currentSourceSlot + 1;
-                    if (nextSlot >= maxSourceSlots) break;
-
-                    const { items, hasMore } = await fetchFeedSlot(requestLang, nextSlot, signal);
-                    currentSourceSlot = nextSlot;
-                    hasMoreSourceSlots = hasMore;
-
-                    // Для предзагрузки тем берем релевантные записи из всех источников,
-                    // чтобы в каждой теме было как можно больше свежих карточек.
-                    allNewsItems = mergeNewsItems(allNewsItems, items);
+                // Собираем список оставшихся слотов и загружаем их ПАРАЛЛЕЛЬНО.
+                const slotsToFetch = [];
+                for (let s = currentSourceSlot + 1; s < maxSourceSlots; s++) {
+                    slotsToFetch.push(s);
                 }
+                if (slotsToFetch.length === 0) return;
+
+                const results = await Promise.all(
+                    slotsToFetch.map(s => fetchFeedSlot(requestLang, s, signal).catch(() => null))
+                );
+
+                let lastLoadedSlot = currentSourceSlot;
+                let lastHasMore = false;
+
+                results.forEach((result, idx) => {
+                    if (!result) return;
+                    const s = slotsToFetch[idx];
+                    allNewsItems = mergeNewsItems(allNewsItems, result.items);
+                    lastLoadedSlot = s;
+                    lastHasMore = result.hasMore;
+                });
+
+                currentSourceSlot = lastLoadedSlot;
+                hasMoreSourceSlots = lastHasMore;
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
                 setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
@@ -717,12 +745,11 @@
                 if (allNewsItems.length === 0) throw new Error("Лента пуста");
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                await ensureTopicPrefill(requestLang, activeFetchController.signal);
-
-                if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
-
                 setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
                 applyFilter('all');
+
+                // Предзагрузка тем идёт в фоне — не блокирует отображение первых карточек.
+                ensureTopicPrefill(requestLang, activeFetchController.signal);
 
             } catch (error) {
                 if (error.name === 'AbortError') return;
