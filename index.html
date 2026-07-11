@@ -53,6 +53,17 @@
 
         .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
         .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; cursor: pointer; }
+        .hero-banner { position: relative; overflow: hidden; }
+        .hero-slide { display: none; }
+        .hero-slide.active { display: block; animation: fadeInUp 0.4s ease; }
+        .hero-fixed { height: 320px; }
+        .hero-fixed-image { height: 100%; }
+        .hero-dots button { width: 9px; height: 9px; border-radius: 999px; border: none; background: var(--card-border); opacity: 0.6; cursor: pointer; transition: all 0.2s ease; }
+        .hero-dots button.active { background: var(--accent); opacity: 1; transform: scale(1.2); }
+        .time-badge { background: color-mix(in srgb, var(--accent) 92%, black 8%); color: var(--btn-text); border: 1px solid color-mix(in srgb, var(--accent) 65%, var(--card-border) 35%); }
+        .yt-card { cursor: pointer; }
+        .yt-card img { transition: transform 0.35s ease; }
+        .yt-card:hover img { transform: scale(1.04); }
         
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
@@ -74,7 +85,7 @@
         .reader-prose blockquote { border-left: 3px solid var(--card-border); padding-left: 1rem; color: var(--text-muted); margin: 1rem 0; }
     </style>
 </head>
-<body class="min-h-screen"> 
+<body class="min-h-screen theme-light"> 
 
     <header class="sticky top-0 z-50 backdrop-blur-md app-navbar">
         <div class="max-w-7xl px-4 sm:px-6 lg:px-8 mx-auto h-20 flex items-center justify-between">
@@ -105,13 +116,30 @@
                 <button onclick="applyFilter('all')" id="filter-all" class="filter-btn filter-btn-time active">Все</button>
                 <button onclick="applyFilter('today')" id="filter-today" class="filter-btn filter-btn-time">Сегодня</button>
                 <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn filter-btn-time">Вчера</button>
+                <button onclick="applyFilter('week')" id="filter-week" class="filter-btn filter-btn-time">Неделя</button>
+                <button onclick="applyFilter('month')" id="filter-month" class="filter-btn filter-btn-time">Месяц</button>
+                <button onclick="applyFilter('three_months')" id="filter-three-months" class="filter-btn filter-btn-time">3 месяца</button>
             </div>
         </div>
+
+        <section class="mb-8">
+            <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-banner-label">Топ 5 новостей</div>
+            <div id="top-banner" class="hero-banner app-card rounded-2xl border border-custom hidden"></div>
+        </section>
 
         <div class="mb-8">
             <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-topic-label">Темы</div>
             <div class="flex gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 scrollbar-hide" id="topic-filters-container"></div>
         </div>
+
+        <section class="mb-8">
+            <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-youtube-label">YouTube: Технологии</div>
+            <div class="flex items-stretch gap-3">
+                <div id="youtube-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 flex-1"></div>
+                <button id="btn-youtube-more" onclick="loadNextYoutubeStrip()" class="app-card px-4 rounded-xl text-xl font-bold hover:opacity-80 transition-all h-auto" aria-label="Load more youtube videos">→</button>
+            </div>
+            <div id="youtube-loader" class="text-sm text-muted code-font mt-2">Загрузка видео...</div>
+        </section>
 
         <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка...</div>
         
@@ -150,6 +178,7 @@
             <article class="pt-6">
                 <h1 id="reader-title" class="text-2xl font-extrabold leading-tight mb-2"></h1>
                 <p id="reader-date" class="text-xs code-font text-muted mb-6"></p>
+                <div id="reader-loading" class="app-card rounded-xl px-4 py-3 text-sm text-muted code-font mb-6 hidden">Загружаем статью...</div>
 
                 <!-- Hero image -->
                 <div id="reader-hero" class="h-72 rounded-2xl overflow-hidden mb-8 hidden">
@@ -172,9 +201,31 @@
         </div>
     </div>
 
+    <!-- ===== YouTube Reader Overlay ===== -->
+    <div id="youtube-reader" class="fixed inset-0 z-[110] hidden overflow-y-auto" style="background-color: rgba(0,0,0,0.65);">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+            <div class="app-card rounded-2xl border border-custom overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b border-custom">
+                    <button onclick="closeYoutubeReader()" class="app-card px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all">← <span id="yt-lbl-back">Назад</span></button>
+                    <a id="yt-open-link" href="#" target="_blank" rel="noopener noreferrer" class="bg-accent px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all" style="color: var(--btn-text);">
+                        <span id="yt-lbl-open">Открыть в YouTube</span> ↗
+                    </a>
+                </div>
+                <div class="p-4">
+                    <h3 id="yt-reader-title" class="text-xl font-extrabold mb-1"></h3>
+                    <p id="yt-reader-date" class="text-xs code-font text-muted mb-4"></p>
+                    <p id="yt-reader-desc" class="text-sm text-muted leading-relaxed mb-4"></p>
+                    <div class="w-full aspect-video rounded-xl overflow-hidden border border-custom bg-black">
+                        <iframe id="yt-reader-frame" src="" title="YouTube video player" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentLang = 'ru';
-        let currentTheme = 'dark';
+        let currentTheme = 'light';
         
         let allNewsItems = []; 
         let filteredNewsItems = [];
@@ -188,8 +239,19 @@
         let maxSourceSlots = 1;
         let isLoadingOlder = false;
         let isWarmingTopics = false;
+        let youtubeFeedItems = [];
+        let currentYoutubeSlot = 0;
+        let maxYoutubeSlots = 1;
+        let isLoadingYoutube = false;
+        let youtubePageOffset = 0;
+        let isEnsuringTimeCoverage = false;
+        let bannerRotationTimer = null;
+        let currentBannerSlide = 0;
         const RENDER_BATCH_SIZE = 9;
+        const YOUTUBE_BATCH_SIZE = 5;
         const NEWS_CACHE_PREFIX = 'really_news_cache_v5_';
+        const YOUTUBE_CACHE_PREFIX = 'really_youtube_cache_v1_';
+        const YOUTUBE_CACHE_TTL_MS = 12 * 60 * 1000;
         const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
         const PREFILL_PARALLEL_LIMIT = 2;
         const SOURCE_SLOT_COUNT = { ru: 3, en: 6 };
@@ -292,29 +354,45 @@
                 feedTitle: 'Лента новостей',
                 footer: `© ${new Date().getFullYear()} REALLY?. Собственный сервер API.`,
                 loading: 'Загрузка...',
+                youtubeLoading: 'Загрузка видео...',
                 loadingMore: 'Загружаем старые новости...',
                 readMore: 'Читать',
                 error: 'Ошибка загрузки. Обновите страницу.',
-                filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
+                filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера', filterWeek: 'Неделя', filterMonth: 'Месяц', filterThreeMonths: '3 месяца',
                 topicLabel: 'Темы',
+                bannerLabel: 'Топ 5 новостей',
+                youtubeLabel: 'YouTube: Технологии',
                 topicAll: 'Все темы',
                 empty: 'За этот период новостей пока нет.',
                 btnLoadMore: 'Показать еще ↓',
-                noMoreNews: 'На сегодня новостей больше нет'
+                noMoreNews: 'На сегодня новостей больше нет',
+                youtubeEmpty: 'Видео пока не найдены.',
+                youtubeOpen: 'Открыть в YouTube',
+                youtubeWatch: 'Смотреть',
+                youtubeMore: 'Еще видео',
+                back: 'Назад'
             },
             en: {
                 feedTitle: 'News Feed',
                 footer: `© ${new Date().getFullYear()} REALLY?. Custom API Server.`,
                 loading: 'Loading...',
+                youtubeLoading: 'Loading videos...',
                 loadingMore: 'Loading older news...',
                 readMore: 'Read',
                 error: 'Loading error. Please refresh.',
-                filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
+                filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday', filterWeek: 'Week', filterMonth: 'Month', filterThreeMonths: '3 months',
                 topicLabel: 'Topics',
+                bannerLabel: 'Top 5 News',
+                youtubeLabel: 'YouTube: Technology',
                 topicAll: 'All topics',
                 empty: 'No news found for this period.',
                 btnLoadMore: 'Load more ↓',
-                noMoreNews: 'No more news for today'
+                noMoreNews: 'No more news for today',
+                youtubeEmpty: 'No videos found yet.',
+                youtubeOpen: 'Open in YouTube',
+                youtubeWatch: 'Watch',
+                youtubeMore: 'More videos',
+                back: 'Back'
             }
         };
 
@@ -364,7 +442,7 @@
                 btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
             }
             updateTexts();
-            fetchNews();
+            fetchNews(currentLang, { preserveFilters: true });
         }
 
         function updateTexts() {
@@ -372,10 +450,20 @@
             document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> ${t.feedTitle}`;
             document.getElementById('txt-footer').innerText = t.footer;
             document.getElementById('txt-topic-label').innerText = t.topicLabel;
+            document.getElementById('txt-banner-label').innerText = t.bannerLabel;
+            document.getElementById('txt-youtube-label').innerText = t.youtubeLabel;
             document.getElementById('filter-all').innerText = t.filterAll;
             document.getElementById('filter-today').innerText = t.filterToday;
             document.getElementById('filter-yesterday').innerText = t.filterYesterday;
+            document.getElementById('filter-week').innerText = t.filterWeek;
+            document.getElementById('filter-month').innerText = t.filterMonth;
+            document.getElementById('filter-three-months').innerText = t.filterThreeMonths;
+            document.getElementById('yt-lbl-open').innerText = t.youtubeOpen;
+            document.getElementById('yt-lbl-back').innerText = t.back;
+            document.getElementById('btn-youtube-more').title = t.youtubeMore;
             renderTopicButtons();
+            renderTopBanner();
+            renderYoutubeStrip(false);
             
             const loadBtn = document.getElementById('btn-load-more');
             if (loadBtn.disabled) {
@@ -450,6 +538,35 @@
             return `/api/image?url=${encodeURIComponent(normalized)}`;
         }
 
+        function getTimeBoundaryMs(filterType) {
+            const now = Date.now();
+            if (filterType === 'week') return now - 7 * 24 * 60 * 60 * 1000;
+            if (filterType === 'month') return now - 30 * 24 * 60 * 60 * 1000;
+            if (filterType === 'three_months') return now - 90 * 24 * 60 * 60 * 1000;
+            return 0;
+        }
+
+        function matchesTimeFilter(item, filterType) {
+            if (filterType === 'all') return true;
+            const ts = Number(item.timestamp || 0);
+            if (!Number.isFinite(ts) || ts <= 0) return false;
+
+            const startToday = new Date();
+            startToday.setHours(0, 0, 0, 0);
+            const todayTs = startToday.getTime();
+
+            if (filterType === 'today') {
+                return ts >= todayTs;
+            }
+
+            if (filterType === 'yesterday') {
+                const yesterdayTs = todayTs - 24 * 60 * 60 * 1000;
+                return ts >= yesterdayTs && ts < todayTs;
+            }
+
+            return ts >= getTimeBoundaryMs(filterType);
+        }
+
         function getCachedNews(lang) {
             try {
                 const raw = localStorage.getItem(`${NEWS_CACHE_PREFIX}${lang}`);
@@ -478,6 +595,325 @@
             } catch (e) {
                 // Игнорируем ошибки localStorage (private mode / quota exceeded).
             }
+        }
+
+        function getCachedYoutube(lang) {
+            try {
+                const raw = localStorage.getItem(`${YOUTUBE_CACHE_PREFIX}${lang}`);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.items) || typeof parsed.ts !== 'number') return null;
+                if (Date.now() - parsed.ts > YOUTUBE_CACHE_TTL_MS) return null;
+                return parsed.items;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function setCachedYoutube(lang, items) {
+            try {
+                localStorage.setItem(`${YOUTUBE_CACHE_PREFIX}${lang}`, JSON.stringify({ ts: Date.now(), items }));
+            } catch (e) {
+                // Игнорируем ошибки localStorage.
+            }
+        }
+
+        function getTopBannerItems() {
+            return [...allNewsItems]
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+                .slice(0, 5);
+        }
+
+        function rotateBannerTo(index) {
+            const slides = document.querySelectorAll('.hero-slide');
+            const dots = document.querySelectorAll('.hero-dots button');
+            if (!slides.length) return;
+
+            currentBannerSlide = (index + slides.length) % slides.length;
+            slides.forEach((slide, idx) => slide.classList.toggle('active', idx === currentBannerSlide));
+            dots.forEach((dot, idx) => dot.classList.toggle('active', idx === currentBannerSlide));
+        }
+
+        function startBannerRotation() {
+            if (bannerRotationTimer) {
+                clearInterval(bannerRotationTimer);
+                bannerRotationTimer = null;
+            }
+
+            const slides = document.querySelectorAll('.hero-slide');
+            if (slides.length <= 1) return;
+
+            bannerRotationTimer = setInterval(() => {
+                rotateBannerTo(currentBannerSlide + 1);
+            }, 4500);
+        }
+
+        function renderTopBanner() {
+            const banner = document.getElementById('top-banner');
+            const items = getTopBannerItems();
+
+            if (!items.length) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            banner.classList.remove('hidden');
+                banner.innerHTML = `
+                <button onclick="event.stopPropagation(); rotateBannerTo(currentBannerSlide - 1); startBannerRotation();"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 z-10 app-card w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold"
+                    aria-label="Previous slide">←</button>
+                <button onclick="event.stopPropagation(); rotateBannerTo(currentBannerSlide + 1); startBannerRotation();"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 z-10 app-card w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold"
+                    aria-label="Next slide">→</button>
+                ` + items.map((item, idx) => {
+                const safeTitle = escapeHTML(item.title);
+                const safeDateLabel = escapeHTML(item.dateLabel);
+                const safeDesc = escapeHTML(item.desc || '');
+                const safeLink = escapeHTML(safeAbsoluteUrl(item.link, '#'));
+                const image = safeAbsoluteUrl(item.img, '');
+                const proxy = buildImageProxySrc(item.img);
+                const visual = image
+                    ? `<img src="${escapeHTML(image)}" data-proxy-src="${escapeHTML(proxy)}" data-proxy-tried="0" onerror="handleImageError(this)" class="w-full h-full object-cover">`
+                    : `<div class="absolute inset-0 placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
+
+                return `
+                    <article class="hero-slide ${idx === 0 ? 'active' : ''}" data-link="${safeLink}" onclick="openReader(this.dataset.link)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 hero-fixed">
+                            <div class="relative hero-fixed-image border-b md:border-b-0 md:border-r border-custom overflow-hidden">${visual}</div>
+                            <div class="p-6 md:p-8 flex flex-col justify-between gap-4">
+                                <div>
+                                    <div class="inline-flex items-center gap-2 text-[11px] code-font mb-3 px-2.5 py-1 rounded-md time-badge">TOP 5 • ${safeDateLabel}</div>
+                                    <h3 class="text-xl md:text-2xl font-extrabold leading-tight">${safeTitle}</h3>
+                                    <p class="text-sm text-muted mt-3 leading-relaxed">${safeDesc}</p>
+                                </div>
+                                <div class="self-start text-sm font-bold bg-accent/20 px-3 py-2 rounded-lg">${dict[currentLang].readMore} →</div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('') + `
+                <div class="hero-dots flex items-center justify-center gap-2 py-3 border-t border-custom">
+                    ${items.map((_, idx) => `<button class="${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); rotateBannerTo(${idx}); startBannerRotation();" aria-label="Slide ${idx + 1}"></button>`).join('')}
+                </div>
+            `;
+
+            currentBannerSlide = 0;
+            startBannerRotation();
+        }
+
+        function extractYoutubeVideoId(url) {
+            try {
+                const parsed = new URL(String(url || ''));
+                if (parsed.hostname.includes('youtu.be')) return parsed.pathname.replace('/', '').trim();
+                if (parsed.searchParams.get('v')) return parsed.searchParams.get('v');
+                if (parsed.pathname.includes('/shorts/')) return parsed.pathname.split('/shorts/')[1].split('/')[0];
+            } catch (e) {
+                return '';
+            }
+            return '';
+        }
+
+        function mergeYoutubeItems(existingItems, incomingItems) {
+            const byLink = new Map();
+            existingItems.forEach(item => {
+                if (item.link) byLink.set(item.link, item);
+            });
+            incomingItems.forEach(item => {
+                if (item.link && !byLink.has(item.link)) byLink.set(item.link, item);
+            });
+            return Array.from(byLink.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        }
+
+        function normalizeYoutubeItems(items) {
+            return (Array.isArray(items) ? items : []).map(item => {
+                const dateInfo = parseAndFormatDate(item.publishedAt);
+                const cleanDesc = String(item.description || '').replace(/\s+/g, ' ').trim();
+                return {
+                    ...item,
+                    dateLabel: dateInfo.label,
+                    timestamp: dateInfo.timestamp,
+                    videoId: extractYoutubeVideoId(item.link),
+                    description: cleanDesc.length > 130 ? `${cleanDesc.slice(0, 127)}...` : cleanDesc,
+                };
+            }).filter(item => item.videoId && item.link);
+        }
+
+        async function fetchYoutubeSlot(lang, slot) {
+            const resp = await fetch(`/api/youtube?lang=${lang}&slot=${slot}`);
+            if (!resp.ok) throw new Error('youtube slot failed');
+
+            const hasMore = resp.headers.get('X-YT-Has-More') === '1';
+            const slotCountHeader = Number.parseInt(resp.headers.get('X-YT-Slot-Count') || '0', 10);
+            const slotCount = Number.isFinite(slotCountHeader) && slotCountHeader > 0 ? slotCountHeader : 1;
+            const data = await resp.json();
+            return {
+                items: normalizeYoutubeItems(data.items),
+                hasMore,
+                slotCount,
+            };
+        }
+
+        async function startYoutubeStream(lang = currentLang) {
+            const loader = document.getElementById('youtube-loader');
+            const grid = document.getElementById('youtube-grid');
+            loader.classList.remove('hidden');
+            loader.innerText = dict[lang].youtubeLoading;
+
+            currentYoutubeSlot = 0;
+            maxYoutubeSlots = 1;
+            youtubePageOffset = 0;
+            youtubeFeedItems = [];
+            grid.innerHTML = '';
+
+            const cached = getCachedYoutube(lang);
+            if (cached && cached.length) {
+                youtubeFeedItems = normalizeYoutubeItems(cached);
+                renderYoutubeStrip(true);
+            }
+
+            await loadMoreYoutubeStream(lang, { force: true });
+            let retries = 0;
+            while (youtubeFeedItems.length === 0 && currentYoutubeSlot < maxYoutubeSlots && retries < maxYoutubeSlots) {
+                await loadMoreYoutubeStream(lang, { force: true });
+                retries += 1;
+            }
+            renderYoutubeStrip(youtubeFeedItems.length > 0 ? false : true);
+            loader.classList.add('hidden');
+        }
+
+        async function loadMoreYoutubeStream(lang = currentLang, options = {}) {
+            if (isLoadingYoutube) return;
+            const force = !!options.force;
+            if (!force && maxYoutubeSlots > 0 && currentYoutubeSlot >= maxYoutubeSlots) return;
+
+            isLoadingYoutube = true;
+            const loader = document.getElementById('youtube-loader');
+            loader.classList.remove('hidden');
+            loader.innerText = dict[lang].youtubeLoading;
+
+            try {
+                const slotToFetch = currentYoutubeSlot;
+                const { items, slotCount } = await fetchYoutubeSlot(lang, slotToFetch);
+
+                maxYoutubeSlots = slotCount;
+                currentYoutubeSlot = slotToFetch + 1;
+                youtubeFeedItems = mergeYoutubeItems(youtubeFeedItems, items);
+
+                setCachedYoutube(lang, youtubeFeedItems);
+            } catch (e) {
+                if (youtubePageOffset === 0 && youtubeFeedItems.length === 0) {
+                    document.getElementById('youtube-grid').innerHTML = `<div class="text-sm text-muted code-font col-span-full">${dict[currentLang].youtubeEmpty}</div>`;
+                }
+            } finally {
+                isLoadingYoutube = false;
+                loader.classList.add('hidden');
+            }
+        }
+
+        function getFilteredYoutubeItemsByType(filterType) {
+            if (filterType === 'all') return [...youtubeFeedItems];
+            return youtubeFeedItems.filter(item => matchesTimeFilter(item, filterType));
+        }
+
+        function renderYoutubeStrip(resetOffset = false) {
+            const grid = document.getElementById('youtube-grid');
+            const btn = document.getElementById('btn-youtube-more');
+
+            if (resetOffset) youtubePageOffset = 0;
+            const filteredYoutube = getFilteredYoutubeItemsByType(currentFilterType);
+
+            if (!filteredYoutube.length) {
+                grid.innerHTML = `<div class="text-sm text-muted code-font col-span-full">${dict[currentLang].youtubeEmpty}</div>`;
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            if (youtubePageOffset >= filteredYoutube.length) {
+                youtubePageOffset = 0;
+            }
+
+            const batch = filteredYoutube.slice(youtubePageOffset, youtubePageOffset + YOUTUBE_BATCH_SIZE);
+            if (!batch.length) {
+                grid.innerHTML = `<div class="text-sm text-muted code-font col-span-full">${dict[currentLang].youtubeEmpty}</div>`;
+                return;
+            }
+
+            grid.innerHTML = batch.map(item => {
+                const thumb = escapeHTML(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`);
+                const safeTitle = escapeHTML(item.title || 'YouTube');
+                const safeDate = escapeHTML(item.dateLabel || '');
+                const safeLink = escapeHTML(item.link);
+                const safeChannel = escapeHTML(item.channel || 'YouTube');
+                const safeDesc = escapeHTML(item.description || '');
+
+                return `
+                    <article class="yt-card app-card rounded-2xl overflow-hidden border border-custom" data-link="${safeLink}" onclick="openYoutubeReader(this.dataset.link)">
+                        <div class="relative h-36 overflow-hidden border-b border-custom">
+                            <img src="${thumb}" alt="${safeTitle}" class="w-full h-full object-cover" loading="lazy">
+                            <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold code-font px-2 py-1 rounded">YouTube</div>
+                            <div class="absolute top-2 right-2 text-[10px] font-bold code-font px-2 py-1 rounded time-badge">${safeDate}</div>
+                        </div>
+                        <div class="p-3">
+                            <h4 class="text-sm font-bold leading-snug min-h-[3.2rem]">${safeTitle}</h4>
+                            <p class="text-xs text-muted mt-2 min-h-[2.8rem]">${safeDesc || '&nbsp;'}</p>
+                            <p class="text-xs text-muted mt-2">${safeChannel}</p>
+                            <div class="mt-3 inline-flex text-xs font-bold bg-accent/20 px-2.5 py-1.5 rounded-lg">${dict[currentLang].youtubeWatch} →</div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        async function loadNextYoutubeStrip() {
+            const filteredYoutube = getFilteredYoutubeItemsByType(currentFilterType);
+            const desiredNextOffset = youtubePageOffset + YOUTUBE_BATCH_SIZE;
+
+            if (desiredNextOffset < filteredYoutube.length) {
+                youtubePageOffset = desiredNextOffset;
+                renderYoutubeStrip(false);
+                return;
+            }
+
+            if (currentYoutubeSlot < maxYoutubeSlots) {
+                await loadMoreYoutubeStream(currentLang, { force: true });
+                const refreshed = getFilteredYoutubeItemsByType(currentFilterType);
+                if (desiredNextOffset < refreshed.length) {
+                    youtubePageOffset = desiredNextOffset;
+                } else {
+                    youtubePageOffset = 0;
+                }
+                renderYoutubeStrip(false);
+                return;
+            }
+
+            // Когда слоты закончились, начинаем с начала полосы.
+            youtubePageOffset = 0;
+            renderYoutubeStrip(false);
+        }
+
+        function openYoutubeReader(link) {
+            const normalizedLink = String(link || '').split('#')[0];
+            const item = youtubeFeedItems.find(v => String(v.link || '').split('#')[0] === normalizedLink);
+            if (!item) return;
+
+            document.getElementById('yt-reader-title').innerText = item.title || '';
+            document.getElementById('yt-reader-date').innerText = item.dateLabel || '';
+            document.getElementById('yt-reader-desc').innerText = item.description || '';
+            document.getElementById('yt-reader-frame').src = `https://www.youtube-nocookie.com/embed/${item.videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+            document.getElementById('yt-open-link').href = normalizedLink;
+            document.getElementById('youtube-reader').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeYoutubeReader() {
+            document.getElementById('youtube-reader').classList.add('hidden');
+            document.getElementById('yt-reader-frame').src = '';
+            if (!document.getElementById('article-reader').classList.contains('hidden')) return;
+            document.body.style.overflow = '';
         }
 
         function isTechNewsItem(item, lang) {
@@ -638,7 +1074,7 @@
         }
 
         function getFilteredItemsByType(filterType) {
-            const byTime = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => item.category === filterType);
+            const byTime = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => matchesTimeFilter(item, filterType));
             if (currentTopicFilter === 'all') return byTime;
             return byTime.filter(item => item.topic === currentTopicFilter);
         }
@@ -661,6 +1097,9 @@
         function getCurrentFilterType() {
             if (document.getElementById('filter-today').classList.contains('active')) return 'today';
             if (document.getElementById('filter-yesterday').classList.contains('active')) return 'yesterday';
+            if (document.getElementById('filter-week').classList.contains('active')) return 'week';
+            if (document.getElementById('filter-month').classList.contains('active')) return 'month';
+            if (document.getElementById('filter-three-months').classList.contains('active')) return 'three_months';
             return 'all';
         }
 
@@ -687,6 +1126,41 @@
                 loadBtn.disabled = false;
                 loadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 loadBtn.innerText = dict[currentLang].btnLoadMore;
+            }
+        }
+
+        async function ensureCoverageForFilter(filterType) {
+            if (isEnsuringTimeCoverage) return;
+            if (filterType === 'all' || filterType === 'today' || filterType === 'yesterday') return;
+            if (getFilteredItemsByType(filterType).length >= RENDER_BATCH_SIZE) return;
+
+            isEnsuringTimeCoverage = true;
+            try {
+                let guard = 0;
+                while (hasMoreSourceSlots && guard < maxSourceSlots) {
+                    const nextSlot = currentSourceSlot + 1;
+                    if (nextSlot >= maxSourceSlots) {
+                        hasMoreSourceSlots = false;
+                        break;
+                    }
+
+                    const { items, hasMore } = await fetchFeedSlot(currentLang, nextSlot);
+                    currentSourceSlot = nextSlot;
+                    hasMoreSourceSlots = hasMore;
+                    allNewsItems = mergeNewsItems(allNewsItems, items);
+                    guard += 1;
+
+                    if (getFilteredItemsByType(filterType).length >= RENDER_BATCH_SIZE) {
+                        break;
+                    }
+                }
+
+                allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
+                setCachedNews(currentLang, allNewsItems, currentSourceSlot, maxSourceSlots);
+            } catch (error) {
+                console.warn('Failed to extend time coverage:', error);
+            } finally {
+                isEnsuringTimeCoverage = false;
             }
         }
 
@@ -758,6 +1232,7 @@
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
                 setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
                 filteredNewsItems = getFilteredItemsByType(currentFilterType);
+                renderTopBanner();
             } catch (e) {
                 if (e.name !== 'AbortError') {
                     console.warn('Topic prefill skipped:', e);
@@ -800,7 +1275,7 @@
                 hasMoreSourceSlots = currentSourceSlot < maxSourceSlots - 1;
 
                 allNewsItems = [...cachedPayload.items].sort((a, b) => b.timestamp - a.timestamp);
-                applyFilter('all');
+                await applyFilter(preserveFilters ? currentFilterType : 'all');
             }
 
             try {
@@ -822,7 +1297,8 @@
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
                 setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
-                applyFilter('all');
+                await applyFilter(preserveFilters ? currentFilterType : 'all');
+                renderTopBanner();
 
                 // Предзагрузка тем идёт в фоне — не блокирует отображение первых карточек.
                 ensureTopicPrefill(requestLang, activeFetchController.signal);
@@ -833,6 +1309,8 @@
                 document.getElementById('loader-list').classList.remove('hidden');
                 document.getElementById('loader-list').innerText = dict[requestLang].error;
             }
+
+            startYoutubeStream(requestLang);
         }
 
         async function loadOlderNews() {
@@ -868,6 +1346,7 @@
                 setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
 
                 filteredNewsItems = getFilteredItemsByType(currentFilterType);
+                renderTopBanner();
 
                 if (filteredNewsItems.length > previousRenderedCount) {
                     renderNextBatch();
@@ -893,6 +1372,7 @@
             }
 
             filteredNewsItems = getFilteredItemsByType(currentFilterType);
+            renderTopBanner();
             document.getElementById('loader-list').classList.add('hidden');
             document.getElementById('news-grid').innerHTML = '';
             currentRenderIndex = 0;
@@ -907,13 +1387,18 @@
             renderNextBatch();
         }
 
-        function applyFilter(filterType) {
+        async function applyFilter(filterType) {
             if (allNewsItems.length === 0) return; 
             currentFilterType = filterType;
             document.querySelectorAll('.filter-btn-time').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`filter-${filterType}`).classList.add('active');
+            const filterId = filterType === 'three_months' ? 'filter-three-months' : `filter-${filterType}`;
+            document.getElementById(filterId).classList.add('active');
+
+            await ensureCoverageForFilter(filterType);
 
             filteredNewsItems = getFilteredItemsByType(filterType);
+            renderTopBanner();
+            renderYoutubeStrip(true);
 
             document.getElementById('loader-list').classList.add('hidden');
             document.getElementById('news-grid').innerHTML = '';
@@ -1013,6 +1498,9 @@
             document.body.style.overflow = 'hidden';
 
             const contentEl = document.getElementById('reader-content');
+            const loadingEl = document.getElementById('reader-loading');
+            loadingEl.textContent = isRu ? 'Загружаем статью...' : 'Loading article...';
+            loadingEl.classList.remove('hidden');
 
             // Сразу показываем RSS-контент, чтобы ридер открывался мгновенно.
             const rssHtml = item.fullHtml || `<p>${escapeHTML(item.desc || '')}</p>`;
@@ -1026,6 +1514,7 @@
                     if (htmlTextLength(cachedFull) > rssLen + 80) {
                         contentEl.innerHTML = cachedFull;
                     }
+                    loadingEl.classList.add('hidden');
                     return;
                 }
 
@@ -1041,16 +1530,21 @@
                         if (fetchedLen > rssLen + 80 && document.getElementById('reader-src-top').href === link) {
                             contentEl.innerHTML = sanitized;
                         }
+                        loadingEl.classList.add('hidden');
                         return;
                     }
                 }
             } catch (e) {
                 // Тихо игнорируем — оставляем RSS-контент
             }
+
+            loadingEl.classList.add('hidden');
         }
 
         function closeReader() {
             document.getElementById('article-reader').classList.add('hidden');
+            document.getElementById('reader-loading').classList.add('hidden');
+            if (!document.getElementById('youtube-reader').classList.contains('hidden')) return;
             document.body.style.overflow = '';
         }
 
@@ -1088,7 +1582,7 @@
                         <div class="flex flex-col h-full cursor-pointer select-none">
                             <div class="h-48 overflow-hidden border-b border-custom relative">
                                 ${imgBlock}
-                                <div class="absolute top-3 left-3 bg-[#0d1b2a]/90 backdrop-blur-md border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)] shadow-lg">
+                                <div class="absolute top-3 left-3 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-bold code-font shadow-lg time-badge">
                                     ${safeDateLabel}
                                 </div>
                             </div>
@@ -1128,11 +1622,15 @@
         }
         
         window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('theme-toggle-btn').innerText = '☀️';
             updateTexts();
             fetchNews(currentLang);
 
             document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') closeReader();
+                if (e.key === 'Escape') {
+                    closeReader();
+                    closeYoutubeReader();
+                }
             });
 
             // Периодический авто-рефреш, чтобы лента не "застывала" надолго.
