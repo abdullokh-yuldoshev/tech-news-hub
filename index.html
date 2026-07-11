@@ -5,30 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REALLY? | Живая Лента Технологий</title>
     <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0d1b2a;
-            --card-bg: #1b263b;
-            --card-border: #415a77;
-            --accent: #415a77;
-            --text-main: #e0e1dd;
-            --text-muted: #778da9;
-            --glow: rgba(65, 90, 119, 0.45);
-            --btn-text: #e0e1dd;
+            --bg-color: #0b2545;
+            --card-bg: #13315c;
+            --card-border: #134074;
+            --accent: #8da9c4;
+            --text-main: #eef4ed;
+            --text-muted: #8da9c4;
+            --glow: #134074;
+            --btn-text: #0b2545;
         }
 
         body.theme-light {
-            --bg-color: #fffcf2;
-            --card-bg: #ccc5b9;
-            --card-border: #403d39;
-            --accent: #eb5e28;
-            --text-main: #252422;
-            --text-muted: #403d39;
-            --glow: rgba(235, 94, 40, 0.25);
-            --btn-text: #fffcf2;
+            --bg-color: #e0fbfc;
+            --card-bg: #c2dfe3;
+            --card-border: #9db4c0;
+            --accent: #5c6b73;
+            --text-main: #253237;
+            --text-muted: #5c6b73;
+            --glow: #9db4c0;
+            --btn-text: #e0fbfc;
         }
 
         body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.4s ease, color 0.4s ease; }
@@ -46,43 +46,23 @@
         .filter-btn { border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 16px; border-radius: 99px; font-size: 14px; font-weight: 600; transition: all 0.3s; cursor: pointer; }
         .filter-btn:hover { border-color: var(--text-main); color: var(--text-main); }
         .filter-btn.active { background-color: var(--accent); border-color: var(--accent); color: var(--btn-text); }
-
-        /* Hide native horizontal scrollbar while keeping scroll behavior for mobile chips. */
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .news-date-badge { background-color: var(--card-border); color: var(--text-main); border: 1px solid var(--accent); }
 
         .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
-        .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; cursor: pointer; }
-        .hero-banner { position: relative; overflow: hidden; }
-        .hero-slide { display: none; }
-        .hero-slide.active { display: block; animation: fadeInUp 0.4s ease; }
-        .hero-fixed { height: 320px; }
-        .hero-fixed-image { height: 100%; }
-        .hero-dots button { width: 9px; height: 9px; border-radius: 999px; border: none; background: var(--card-border); opacity: 0.6; cursor: pointer; transition: all 0.2s ease; }
-        .hero-dots button.active { background: var(--accent); opacity: 1; transform: scale(1.2); }
-        .time-badge { background: color-mix(in srgb, var(--accent) 92%, black 8%); color: var(--btn-text); border: 1px solid color-mix(in srgb, var(--accent) 65%, var(--card-border) 35%); }
-        .yt-card { cursor: pointer; }
-        .yt-card img { transition: transform 0.35s ease; }
-        .yt-card:hover img { transform: scale(1.04); }
+        .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
+        .reader-panel { background-color: var(--bg-color); border: 1px solid var(--card-border); }
+        .reader-content { line-height: 1.8; color: var(--text-main); }
+        .reader-content p, .reader-content ul, .reader-content ol, .reader-content blockquote, .reader-content figure { margin-bottom: 0.9rem; }
+        .reader-content h1, .reader-content h2, .reader-content h3, .reader-content h4 { margin: 1rem 0 0.6rem; font-weight: 800; }
+        .reader-content a { color: var(--accent); text-decoration: underline; }
+        .reader-content img { max-width: 100%; height: auto; border-radius: 0.75rem; }
+        .reader-content blockquote { border-left: 3px solid var(--card-border); padding-left: 0.75rem; color: var(--text-muted); }
+        .reader-skeleton { background: linear-gradient(90deg, var(--card-bg) 25%, var(--card-border) 50%, var(--card-bg) 75%); background-size: 200% 100%; animation: skeletonSlide 1.2s ease-in-out infinite; }
+        .reader-skeleton-line { height: 0.85rem; border-radius: 999px; margin-bottom: 0.7rem; }
+        .reader-skeleton-block { border-radius: 1rem; }
+        @keyframes skeletonSlide { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-
-        /* === Article Reader === */
-        #article-reader { background-color: var(--bg-color); }
-        @keyframes readerIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-        .reader-body { animation: readerIn 0.25s ease; }
-        .reader-prose { color: var(--text-main); font-size: 0.97rem; line-height: 1.85; }
-        .reader-prose p { margin-bottom: 1rem; }
-        .reader-prose h1 { font-size: 1.4rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
-        .reader-prose h2 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
-        .reader-prose h3 { font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.4rem; }
-        .reader-prose img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 1.25rem 0; display: block; }
-        .reader-prose figure { margin: 1.25rem 0; }
-        .reader-prose figcaption { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 0.3rem; }
-        .reader-prose a { color: var(--accent); text-decoration: underline; word-break: break-word; }
-        .reader-prose ul, .reader-prose ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-        .reader-prose li { margin-bottom: 0.3rem; }
-        .reader-prose blockquote { border-left: 3px solid var(--card-border); padding-left: 1rem; color: var(--text-muted); margin: 1rem 0; }
     </style>
 </head>
 <body class="min-h-screen theme-light"> 
@@ -112,34 +92,12 @@
                 <span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> Лента новостей
             </h2>
             
-            <div class="flex gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 md:pb-0 scrollbar-hide" id="filters-container">
-                <button onclick="applyFilter('all')" id="filter-all" class="filter-btn filter-btn-time active">Все</button>
-                <button onclick="applyFilter('today')" id="filter-today" class="filter-btn filter-btn-time">Сегодня</button>
-                <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn filter-btn-time">Вчера</button>
-                <button onclick="applyFilter('week')" id="filter-week" class="filter-btn filter-btn-time">Неделя</button>
-                <button onclick="applyFilter('month')" id="filter-month" class="filter-btn filter-btn-time">Месяц</button>
-                <button onclick="applyFilter('three_months')" id="filter-three-months" class="filter-btn filter-btn-time">3 месяца</button>
+            <div class="flex space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide" id="filters-container">
+                <button onclick="applyFilter('all')" id="filter-all" class="filter-btn active">Все</button>
+                <button onclick="applyFilter('today')" id="filter-today" class="filter-btn">Сегодня</button>
+                <button onclick="applyFilter('yesterday')" id="filter-yesterday" class="filter-btn">Вчера</button>
             </div>
         </div>
-
-        <section class="mb-8">
-            <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-banner-label">Топ 5 новостей</div>
-            <div id="top-banner" class="hero-banner app-card rounded-2xl border border-custom hidden"></div>
-        </section>
-
-        <div class="mb-8">
-            <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-topic-label">Темы</div>
-            <div class="flex gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 scrollbar-hide" id="topic-filters-container"></div>
-        </div>
-
-        <section class="mb-8">
-            <div class="text-xs uppercase tracking-wider text-muted code-font mb-2" id="txt-youtube-label">YouTube: Технологии</div>
-            <div class="flex items-stretch gap-3">
-                <div id="youtube-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 flex-1"></div>
-                <button id="btn-youtube-more" onclick="loadNextYoutubeStrip()" class="app-card px-4 rounded-xl text-xl font-bold hover:opacity-80 transition-all h-auto" aria-label="Load more youtube videos">→</button>
-            </div>
-            <div id="youtube-loader" class="text-sm text-muted code-font mt-2">Загрузка видео...</div>
-        </section>
 
         <div id="loader-list" class="text-center py-20 text-muted code-font text-lg">Загрузка...</div>
         
@@ -156,68 +114,28 @@
         <p id="txt-footer"></p>
     </footer>
 
-    <!-- ===== Article Reader Overlay ===== -->
-    <div id="article-reader" class="fixed inset-0 z-[100] hidden overflow-y-auto">
-        <div class="reader-body max-w-3xl mx-auto px-4 sm:px-6 pb-20">
-
-            <!-- Sticky nav bar -->
-            <div class="sticky top-0 z-10 flex items-center justify-between py-4 mb-2"
-                 style="background-color: var(--bg-color); border-bottom: 1px solid var(--card-border);">
-                <button onclick="closeReader()"
-                        class="app-card flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all">
-                    ← <span id="reader-lbl-back">Назад</span>
-                </button>
-                <a id="reader-src-top" href="#" target="_blank" rel="noopener noreferrer"
-                   class="bg-accent flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all"
-                   style="color: var(--btn-text);">
-                    <span id="reader-lbl-src">Источник</span> ↗
-                </a>
-            </div>
-
-            <!-- Article -->
-            <article class="pt-6">
-                <h1 id="reader-title" class="text-2xl font-extrabold leading-tight mb-2"></h1>
-                <p id="reader-date" class="text-xs code-font text-muted mb-6"></p>
-                <div id="reader-loading" class="app-card rounded-xl px-4 py-3 text-sm text-muted code-font mb-6 hidden">Загружаем статью...</div>
-
-                <!-- Hero image -->
-                <div id="reader-hero" class="h-72 rounded-2xl overflow-hidden mb-8 hidden">
-                    <img id="reader-img" src="" alt="" class="w-full h-full object-cover"
-                         onerror="document.getElementById('reader-hero').classList.add('hidden')">
+    <div id="article-reader" class="fixed inset-0 z-[90] hidden">
+        <div class="absolute inset-0 bg-black/60" onclick="closeReader()"></div>
+        <div class="relative z-10 h-full w-full flex items-center justify-center p-4 md:p-6">
+            <div class="reader-panel w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+                <div class="sticky top-0 z-10 p-4 flex items-center justify-between border-b border-custom" style="background-color: var(--bg-color);">
+                    <button onclick="closeReader()" class="app-card px-4 py-2 rounded-xl text-sm font-bold" id="reader-btn-back">Назад</button>
+                    <a id="reader-source-link" href="#" target="_blank" rel="noopener noreferrer" class="bg-accent px-4 py-2 rounded-xl text-sm font-bold" style="color: var(--btn-text);">Источник ↗</a>
                 </div>
-
-                <!-- Full article content -->
-                <div id="reader-content" class="reader-prose"></div>
-            </article>
-
-            <!-- Bottom link to source -->
-            <div class="mt-16 pt-8 border-t border-custom text-center">
-                <a id="reader-src-bottom" href="#" target="_blank" rel="noopener noreferrer"
-                   class="bg-accent inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold hover:opacity-80 transition-all"
-                   style="color: var(--btn-text);">
-                    <span id="reader-lbl-src-bottom">Читать на первоисточнике</span> ↗
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== YouTube Reader Overlay ===== -->
-    <div id="youtube-reader" class="fixed inset-0 z-[110] hidden overflow-y-auto" style="background-color: rgba(0,0,0,0.65);">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-            <div class="app-card rounded-2xl border border-custom overflow-hidden">
-                <div class="flex items-center justify-between p-4 border-b border-custom">
-                    <button onclick="closeYoutubeReader()" class="app-card px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all">← <span id="yt-lbl-back">Назад</span></button>
-                    <a id="yt-open-link" href="#" target="_blank" rel="noopener noreferrer" class="bg-accent px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all" style="color: var(--btn-text);">
-                        <span id="yt-lbl-open">Открыть в YouTube</span> ↗
-                    </a>
-                </div>
-                <div class="p-4">
-                    <h3 id="yt-reader-title" class="text-xl font-extrabold mb-1"></h3>
-                    <p id="yt-reader-date" class="text-xs code-font text-muted mb-4"></p>
-                    <p id="yt-reader-desc" class="text-sm text-muted leading-relaxed mb-4"></p>
-                    <div class="w-full aspect-video rounded-xl overflow-hidden border border-custom bg-black">
-                        <iframe id="yt-reader-frame" src="" title="YouTube video player" class="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <div class="p-4 md:p-6">
+                    <p id="reader-date" class="text-xs code-font text-muted mb-2"></p>
+                    <h2 id="reader-title" class="text-2xl font-extrabold leading-tight mb-4"></h2>
+                    <div id="reader-image-wrap" class="rounded-2xl overflow-hidden border border-custom mb-5 hidden">
+                        <img id="reader-image" src="" alt="" class="w-full h-auto max-h-[360px] object-cover">
                     </div>
+                    <div id="reader-loading" class="mb-4 hidden">
+                        <div class="reader-skeleton reader-skeleton-block h-64 mb-4"></div>
+                        <div class="reader-skeleton reader-skeleton-line w-3/4"></div>
+                        <div class="reader-skeleton reader-skeleton-line w-full"></div>
+                        <div class="reader-skeleton reader-skeleton-line w-5/6"></div>
+                        <div class="reader-skeleton reader-skeleton-line w-2/3"></div>
+                    </div>
+                    <div id="reader-content" class="reader-content"></div>
                 </div>
             </div>
         </div>
@@ -230,189 +148,44 @@
         let allNewsItems = []; 
         let filteredNewsItems = [];
         let currentRenderIndex = 0;
-        let currentFilterType = 'all';
-        let currentTopicFilter = 'all';
-        let activeFetchToken = 0;
-        let activeFetchController = null;
-        let currentSourceSlot = 0;
-        let hasMoreSourceSlots = true;
-        let maxSourceSlots = 1;
-        let isLoadingOlder = false;
-        let isWarmingTopics = false;
-        let youtubeFeedItems = [];
-        let currentYoutubeSlot = 0;
-        let maxYoutubeSlots = 1;
-        let isLoadingYoutube = false;
-        let youtubePageOffset = 0;
-        let isEnsuringTimeCoverage = false;
-        let bannerRotationTimer = null;
-        let currentBannerSlide = 0;
         const RENDER_BATCH_SIZE = 9;
-        const YOUTUBE_BATCH_SIZE = 5;
-        const NEWS_CACHE_PREFIX = 'really_news_cache_v5_';
-        const YOUTUBE_CACHE_PREFIX = 'really_youtube_cache_v1_';
-        const YOUTUBE_CACHE_TTL_MS = 12 * 60 * 1000;
-        const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
-        const PREFILL_PARALLEL_LIMIT = 2;
-        const SOURCE_SLOT_COUNT = { ru: 3, en: 6 };
-        const TECH_KEYWORDS = {
-            ru: [
-                'технолог', 'техно', 'смартфон', 'телефон', 'планшет', 'ноутбук', 'лэптоп', 'пк', 'компьютер',
-                'процессор', 'чип', 'видеокарт', 'gpu', 'cpu', 'npu', 'ai', 'ии', 'искусствен', 'нейросет',
-                'vr', 'ar', 'xr', 'очки', 'гарнитур', 'шлем', 'телевизор', 'tv', 'монитор', 'камера',
-                'дрон', 'робот', 'робототех', 'гаджет', 'наушник', 'смарт', 'умн', 'консоль', 'игров',
-                'android', 'ios', 'apple', 'samsung', 'xiaomi', 'google', 'meta', 'nvidia', 'amd', 'intel', 'qualcomm'
-            ],
-            en: [
-                'tech', 'technology', 'gadget', 'device', 'smartphone', 'phone', 'tablet', 'laptop', 'notebook', 'pc',
-                'computer', 'processor', 'chip', 'chipset', 'gpu', 'cpu', 'npu', 'semiconductor', 'ai', 'artificial intelligence',
-                'vr', 'ar', 'xr', 'headset', 'glasses', 'smart glasses', 'tv', 'television', 'display', 'monitor',
-                'drone', 'robot', 'robotics', 'camera', 'earbuds', 'wearable', 'smartwatch', 'console', 'gaming',
-                'android', 'ios', 'apple', 'samsung', 'xiaomi', 'google', 'meta', 'nvidia', 'amd', 'intel', 'qualcomm'
-            ]
-        };
-
-        const TOPIC_ORDER = [
-            'all',
-            'phones_tablets',
-            'pc_laptops',
-            'chips',
-            'ai',
-            'vr_ar',
-            'tv_display',
-            'drones_robots',
-            'wearables',
-            'gaming',
-            'apps_internet',
-        ];
-
-        const TOPIC_DEFINITIONS = {
-            phones_tablets: {
-                ru: 'Смартфоны/Планшеты',
-                en: 'Phones/Tablets',
-                ruKeywords: ['смартфон', 'телефон', 'планшет', 'iphone', 'android', 'xiaomi', 'samsung galaxy', 'pixel'],
-                enKeywords: ['smartphone', 'phone', 'tablet', 'iphone', 'android', 'galaxy', 'pixel']
-            },
-            pc_laptops: {
-                ru: 'ПК/Ноутбуки',
-                en: 'PC/Laptops',
-                ruKeywords: ['пк', 'компьютер', 'ноутбук', 'лэптоп', 'desktop', 'windows', 'macbook', 'mac'],
-                enKeywords: ['pc', 'computer', 'laptop', 'desktop', 'windows', 'macbook', 'mac']
-            },
-            chips: {
-                ru: 'Чипы/Железо',
-                en: 'Chips/Hardware',
-                ruKeywords: ['процессор', 'чип', 'видеокарт', 'gpu', 'cpu', 'npu', 'intel', 'amd', 'nvidia', 'qualcomm'],
-                enKeywords: ['processor', 'chip', 'gpu', 'cpu', 'npu', 'intel', 'amd', 'nvidia', 'qualcomm', 'hardware']
-            },
-            ai: {
-                ru: 'ИИ',
-                en: 'AI',
-                ruKeywords: ['ии', 'искусствен', 'нейросет', 'ai', 'llm', 'openai', 'chatgpt'],
-                enKeywords: ['ai', 'artificial intelligence', 'llm', 'openai', 'chatgpt', 'model']
-            },
-            vr_ar: {
-                ru: 'VR/AR/Очки',
-                en: 'VR/AR/Glasses',
-                ruKeywords: ['vr', 'ar', 'xr', 'очки', 'гарнитур', 'шлем', 'vision pro', 'headset'],
-                enKeywords: ['vr', 'ar', 'xr', 'smart glasses', 'glasses', 'headset', 'vision pro']
-            },
-            tv_display: {
-                ru: 'ТВ/Дисплеи',
-                en: 'TV/Displays',
-                ruKeywords: ['телевизор', 'tv', 'дисплей', 'экран', 'монитор', 'oled', 'mini-led'],
-                enKeywords: ['tv', 'television', 'display', 'screen', 'monitor', 'oled', 'mini-led']
-            },
-            drones_robots: {
-                ru: 'Дроны/Роботы',
-                en: 'Drones/Robots',
-                ruKeywords: ['дрон', 'робот', 'робототех', 'автоном', 'квадрокоптер'],
-                enKeywords: ['drone', 'robot', 'robotics', 'autonomous', 'quadcopter']
-            },
-            wearables: {
-                ru: 'Носимые',
-                en: 'Wearables',
-                ruKeywords: ['часы', 'смарт-часы', 'smartwatch', 'браслет', 'наушник', 'earbuds', 'wearable'],
-                enKeywords: ['smartwatch', 'watch', 'wearable', 'earbuds', 'fitness band', 'headphones']
-            },
-            gaming: {
-                ru: 'Гейминг',
-                en: 'Gaming',
-                ruKeywords: ['игр', 'gaming', 'console', 'консоль', 'playstation', 'xbox', 'nintendo', 'steam'],
-                enKeywords: ['game', 'gaming', 'console', 'playstation', 'xbox', 'nintendo', 'steam']
-            },
-            apps_internet: {
-                ru: 'Приложения/Интернет',
-                en: 'Apps/Internet',
-                ruKeywords: ['приложен', 'браузер', 'соцсет', 'мессенджер', 'интернет', 'web', 'сервис'],
-                enKeywords: ['app', 'browser', 'internet', 'web', 'service', 'social', 'messenger']
-            }
-        };
 
         const dict = {
             ru: {
                 feedTitle: 'Лента новостей',
                 footer: `© ${new Date().getFullYear()} REALLY?. Собственный сервер API.`,
                 loading: 'Загрузка...',
-                youtubeLoading: 'Загрузка видео...',
-                loadingMore: 'Загружаем старые новости...',
                 readMore: 'Читать',
                 error: 'Ошибка загрузки. Обновите страницу.',
-                filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера', filterWeek: 'Неделя', filterMonth: 'Месяц', filterThreeMonths: '3 месяца',
-                topicLabel: 'Темы',
-                bannerLabel: 'Топ 5 новостей',
-                youtubeLabel: 'YouTube: Технологии',
-                topicAll: 'Все темы',
+                filterAll: 'Все', filterToday: 'Сегодня', filterYesterday: 'Вчера',
                 empty: 'За этот период новостей пока нет.',
                 btnLoadMore: 'Показать еще ↓',
                 noMoreNews: 'На сегодня новостей больше нет',
-                youtubeEmpty: 'Видео пока не найдены.',
-                youtubeOpen: 'Открыть в YouTube',
-                youtubeWatch: 'Смотреть',
-                youtubeMore: 'Еще видео',
-                back: 'Назад'
+                back: 'Назад',
+                source: 'Источник',
+                loadingArticle: 'Загрузка статьи...',
+                readOnSource: 'Читать на первоисточнике',
+                articleUnavailable: 'Не удалось загрузить полный текст. Ниже краткое описание.'
             },
             en: {
                 feedTitle: 'News Feed',
                 footer: `© ${new Date().getFullYear()} REALLY?. Custom API Server.`,
                 loading: 'Loading...',
-                youtubeLoading: 'Loading videos...',
-                loadingMore: 'Loading older news...',
                 readMore: 'Read',
                 error: 'Loading error. Please refresh.',
-                filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday', filterWeek: 'Week', filterMonth: 'Month', filterThreeMonths: '3 months',
-                topicLabel: 'Topics',
-                bannerLabel: 'Top 5 News',
-                youtubeLabel: 'YouTube: Technology',
-                topicAll: 'All topics',
+                filterAll: 'All', filterToday: 'Today', filterYesterday: 'Yesterday',
                 empty: 'No news found for this period.',
                 btnLoadMore: 'Load more ↓',
                 noMoreNews: 'No more news for today',
-                youtubeEmpty: 'No videos found yet.',
-                youtubeOpen: 'Open in YouTube',
-                youtubeWatch: 'Watch',
-                youtubeMore: 'More videos',
-                back: 'Back'
+                back: 'Back',
+                source: 'Source',
+                loadingArticle: 'Loading article...',
+                readOnSource: 'Read on source',
+                articleUnavailable: 'Could not load full text. Summary is shown below.'
             }
         };
 
-        function getTopicLabel(topicKey, lang) {
-            if (topicKey === 'all') return dict[lang].topicAll;
-            return TOPIC_DEFINITIONS[topicKey] ? TOPIC_DEFINITIONS[topicKey][lang] : topicKey;
-        }
-
-        function renderTopicButtons() {
-            const container = document.getElementById('topic-filters-container');
-            container.innerHTML = '';
-
-            TOPIC_ORDER.forEach(topicKey => {
-                const btn = document.createElement('button');
-                btn.className = `filter-btn filter-btn-topic ${topicKey === currentTopicFilter ? 'active' : ''}`;
-                btn.innerText = getTopicLabel(topicKey, currentLang);
-                btn.addEventListener('click', () => applyTopicFilter(topicKey));
-                container.appendChild(btn);
-            });
-        }
+        const articleContentCache = new Map();
 
         function toggleTheme() {
             const body = document.body;
@@ -430,6 +203,7 @@
 
         function changeLanguage(lang) {
             if (currentLang === lang) return;
+            const activeFilter = getActiveFilterType();
             currentLang = lang;
             const btnRu = document.getElementById('btn-ru');
             const btnEn = document.getElementById('btn-en');
@@ -442,50 +216,57 @@
                 btnRu.className = 'px-3 py-1 rounded-lg text-xs font-bold transition-all text-muted hover:text-[var(--text-main)] bg-transparent';
             }
             updateTexts();
-            fetchNews(currentLang, { preserveFilters: true });
+            fetchNews(activeFilter);
+        }
+
+        function getActiveFilterType() {
+            const activeBtn = document.querySelector('.filter-btn.active');
+            if (!activeBtn || !activeBtn.id) return 'all';
+            return activeBtn.id.replace('filter-', '') || 'all';
         }
 
         function updateTexts() {
             const t = dict[currentLang];
             document.getElementById('txt-feed-title').innerHTML = `<span class="w-2 h-6 bg-accent rounded-full transition-colors"></span> ${t.feedTitle}`;
             document.getElementById('txt-footer').innerText = t.footer;
-            document.getElementById('txt-topic-label').innerText = t.topicLabel;
-            document.getElementById('txt-banner-label').innerText = t.bannerLabel;
-            document.getElementById('txt-youtube-label').innerText = t.youtubeLabel;
             document.getElementById('filter-all').innerText = t.filterAll;
             document.getElementById('filter-today').innerText = t.filterToday;
             document.getElementById('filter-yesterday').innerText = t.filterYesterday;
-            document.getElementById('filter-week').innerText = t.filterWeek;
-            document.getElementById('filter-month').innerText = t.filterMonth;
-            document.getElementById('filter-three-months').innerText = t.filterThreeMonths;
-            document.getElementById('yt-lbl-open').innerText = t.youtubeOpen;
-            document.getElementById('yt-lbl-back').innerText = t.back;
-            document.getElementById('btn-youtube-more').title = t.youtubeMore;
-            renderTopicButtons();
-            renderTopBanner();
-            renderYoutubeStrip(false);
+            document.getElementById('reader-btn-back').innerText = t.back;
+            document.getElementById('reader-source-link').innerText = `${t.source} ↗`;
+            document.getElementById('reader-loading').setAttribute('aria-label', t.loadingArticle);
             
             const loadBtn = document.getElementById('btn-load-more');
-            if (loadBtn.disabled) {
-                loadBtn.innerText = t.noMoreNews;
-            } else {
+            if(loadBtn.innerText !== dict['ru'].noMoreNews && loadBtn.innerText !== dict['en'].noMoreNews) {
                 loadBtn.innerText = t.btnLoadMore;
             }
         }
 
         function handleImageError(imgElement) {
-            const proxySrc = imgElement.getAttribute('data-proxy-src');
-            const triedProxy = imgElement.getAttribute('data-proxy-tried') === '1';
-
-            // Сначала пробуем прямую ссылку, при ошибке делаем одну попытку через наш прокси.
-            if (!triedProxy && proxySrc) {
-                imgElement.setAttribute('data-proxy-tried', '1');
-                imgElement.src = proxySrc;
-                return;
-            }
-
             imgElement.style.display = 'none';
-            if (imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
+            if(imgElement.nextElementSibling) imgElement.nextElementSibling.style.display = 'flex';
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function safeHttpUrl(url, fallback = '#') {
+            try {
+                const parsed = new URL(String(url || '').trim());
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return parsed.href;
+                }
+            } catch (e) {
+                return fallback;
+            }
+            return fallback;
         }
 
         function parseAndFormatDate(dateString) {
@@ -514,891 +295,178 @@
             }
         }
 
-        function decodeHtmlEntities(value) {
-            const txt = document.createElement('textarea');
-            txt.innerHTML = String(value || '');
-            return txt.value;
-        }
+        function sanitizeArticleHtml(html) {
+            const root = document.createElement('div');
+            root.innerHTML = String(html || '');
 
-        function normalizeFeedUrl(url) {
-            return decodeHtmlEntities(String(url || '').trim()).replace(/&amp;/gi, '&');
-        }
+            root.querySelectorAll('script, style, iframe, form, nav, header, footer, aside, noscript, object, embed').forEach(el => el.remove());
 
-        function safeAbsoluteUrl(url, fallback = '') {
-            try {
-                return new URL(String(url || '').trim()).href;
-            } catch (e) {
-                return fallback;
-            }
-        }
-
-        function buildImageProxySrc(url) {
-            const normalized = safeAbsoluteUrl(url, '');
-            if (!normalized) return '';
-            return `/api/image?url=${encodeURIComponent(normalized)}`;
-        }
-
-        function getTimeBoundaryMs(filterType) {
-            const now = Date.now();
-            if (filterType === 'week') return now - 7 * 24 * 60 * 60 * 1000;
-            if (filterType === 'month') return now - 30 * 24 * 60 * 60 * 1000;
-            if (filterType === 'three_months') return now - 90 * 24 * 60 * 60 * 1000;
-            return 0;
-        }
-
-        function matchesTimeFilter(item, filterType) {
-            if (filterType === 'all') return true;
-            const ts = Number(item.timestamp || 0);
-            if (!Number.isFinite(ts) || ts <= 0) return false;
-
-            const startToday = new Date();
-            startToday.setHours(0, 0, 0, 0);
-            const todayTs = startToday.getTime();
-
-            if (filterType === 'today') {
-                return ts >= todayTs;
-            }
-
-            if (filterType === 'yesterday') {
-                const yesterdayTs = todayTs - 24 * 60 * 60 * 1000;
-                return ts >= yesterdayTs && ts < todayTs;
-            }
-
-            return ts >= getTimeBoundaryMs(filterType);
-        }
-
-        function getCachedNews(lang) {
-            try {
-                const raw = localStorage.getItem(`${NEWS_CACHE_PREFIX}${lang}`);
-                if (!raw) return null;
-                const parsed = JSON.parse(raw);
-                if (!parsed || !Array.isArray(parsed.items) || typeof parsed.ts !== 'number') return null;
-                if (Date.now() - parsed.ts > NEWS_CACHE_TTL_MS) return null;
-                return {
-                    items: parsed.items,
-                    loadedSlot: Number.isFinite(parsed.loadedSlot) ? parsed.loadedSlot : 0,
-                    maxSlots: Number.isFinite(parsed.maxSlots) && parsed.maxSlots > 0
-                        ? parsed.maxSlots
-                        : (SOURCE_SLOT_COUNT[lang] || 1),
-                };
-            } catch (e) {
-                return null;
-            }
-        }
-
-        function setCachedNews(lang, items, loadedSlot = 0, maxSlots = SOURCE_SLOT_COUNT[lang] || 1) {
-            try {
-                localStorage.setItem(
-                    `${NEWS_CACHE_PREFIX}${lang}`,
-                    JSON.stringify({ ts: Date.now(), items, loadedSlot, maxSlots })
-                );
-            } catch (e) {
-                // Игнорируем ошибки localStorage (private mode / quota exceeded).
-            }
-        }
-
-        function getCachedYoutube(lang) {
-            try {
-                const raw = localStorage.getItem(`${YOUTUBE_CACHE_PREFIX}${lang}`);
-                if (!raw) return null;
-                const parsed = JSON.parse(raw);
-                if (!parsed || !Array.isArray(parsed.items) || typeof parsed.ts !== 'number') return null;
-                if (Date.now() - parsed.ts > YOUTUBE_CACHE_TTL_MS) return null;
-                return parsed.items;
-            } catch (e) {
-                return null;
-            }
-        }
-
-        function setCachedYoutube(lang, items) {
-            try {
-                localStorage.setItem(`${YOUTUBE_CACHE_PREFIX}${lang}`, JSON.stringify({ ts: Date.now(), items }));
-            } catch (e) {
-                // Игнорируем ошибки localStorage.
-            }
-        }
-
-        function getTopBannerItems() {
-            return [...allNewsItems]
-                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-                .slice(0, 5);
-        }
-
-        function rotateBannerTo(index) {
-            const slides = document.querySelectorAll('.hero-slide');
-            const dots = document.querySelectorAll('.hero-dots button');
-            if (!slides.length) return;
-
-            currentBannerSlide = (index + slides.length) % slides.length;
-            slides.forEach((slide, idx) => slide.classList.toggle('active', idx === currentBannerSlide));
-            dots.forEach((dot, idx) => dot.classList.toggle('active', idx === currentBannerSlide));
-        }
-
-        function startBannerRotation() {
-            if (bannerRotationTimer) {
-                clearInterval(bannerRotationTimer);
-                bannerRotationTimer = null;
-            }
-
-            const slides = document.querySelectorAll('.hero-slide');
-            if (slides.length <= 1) return;
-
-            bannerRotationTimer = setInterval(() => {
-                rotateBannerTo(currentBannerSlide + 1);
-            }, 4500);
-        }
-
-        function renderTopBanner() {
-            const banner = document.getElementById('top-banner');
-            const items = getTopBannerItems();
-
-            if (!items.length) {
-                banner.classList.add('hidden');
-                return;
-            }
-
-            banner.classList.remove('hidden');
-                banner.innerHTML = `
-                <button onclick="event.stopPropagation(); rotateBannerTo(currentBannerSlide - 1); startBannerRotation();"
-                    class="absolute left-3 top-1/2 -translate-y-1/2 z-10 app-card w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold"
-                    aria-label="Previous slide">←</button>
-                <button onclick="event.stopPropagation(); rotateBannerTo(currentBannerSlide + 1); startBannerRotation();"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 z-10 app-card w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold"
-                    aria-label="Next slide">→</button>
-                ` + items.map((item, idx) => {
-                const safeTitle = escapeHTML(item.title);
-                const safeDateLabel = escapeHTML(item.dateLabel);
-                const safeDesc = escapeHTML(item.desc || '');
-                const safeLink = escapeHTML(safeAbsoluteUrl(item.link, '#'));
-                const image = safeAbsoluteUrl(item.img, '');
-                const proxy = buildImageProxySrc(item.img);
-                const visual = image
-                    ? `<img src="${escapeHTML(image)}" data-proxy-src="${escapeHTML(proxy)}" data-proxy-tried="0" onerror="handleImageError(this)" class="w-full h-full object-cover">`
-                    : `<div class="absolute inset-0 placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
-
-                return `
-                    <article class="hero-slide ${idx === 0 ? 'active' : ''}" data-link="${safeLink}" onclick="openReader(this.dataset.link)">
-                        <div class="grid grid-cols-1 md:grid-cols-2 hero-fixed">
-                            <div class="relative hero-fixed-image border-b md:border-b-0 md:border-r border-custom overflow-hidden">${visual}</div>
-                            <div class="p-6 md:p-8 flex flex-col justify-between gap-4">
-                                <div>
-                                    <div class="inline-flex items-center gap-2 text-[11px] code-font mb-3 px-2.5 py-1 rounded-md time-badge">TOP 5 • ${safeDateLabel}</div>
-                                    <h3 class="text-xl md:text-2xl font-extrabold leading-tight">${safeTitle}</h3>
-                                    <p class="text-sm text-muted mt-3 leading-relaxed">${safeDesc}</p>
-                                </div>
-                                <div class="self-start text-sm font-bold bg-accent/20 px-3 py-2 rounded-lg">${dict[currentLang].readMore} →</div>
-                            </div>
-                        </div>
-                    </article>
-                `;
-            }).join('') + `
-                <div class="hero-dots flex items-center justify-center gap-2 py-3 border-t border-custom">
-                    ${items.map((_, idx) => `<button class="${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); rotateBannerTo(${idx}); startBannerRotation();" aria-label="Slide ${idx + 1}"></button>`).join('')}
-                </div>
-            `;
-
-            currentBannerSlide = 0;
-            startBannerRotation();
-        }
-
-        function extractYoutubeVideoId(url) {
-            try {
-                const parsed = new URL(String(url || ''));
-                if (parsed.hostname.includes('youtu.be')) return parsed.pathname.replace('/', '').trim();
-                if (parsed.searchParams.get('v')) return parsed.searchParams.get('v');
-                if (parsed.pathname.includes('/shorts/')) return parsed.pathname.split('/shorts/')[1].split('/')[0];
-            } catch (e) {
-                return '';
-            }
-            return '';
-        }
-
-        function mergeYoutubeItems(existingItems, incomingItems) {
-            const byLink = new Map();
-            existingItems.forEach(item => {
-                if (item.link) byLink.set(item.link, item);
+            root.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(attr => {
+                    const name = attr.name.toLowerCase();
+                    const value = String(attr.value || '');
+                    if (name.startsWith('on')) el.removeAttribute(attr.name);
+                    if ((name === 'href' || name === 'src') && /^javascript:/i.test(value)) el.removeAttribute(attr.name);
+                });
             });
-            incomingItems.forEach(item => {
-                if (item.link && !byLink.has(item.link)) byLink.set(item.link, item);
+
+            root.querySelectorAll('a[href]').forEach(a => {
+                a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
             });
-            return Array.from(byLink.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            return root.innerHTML;
         }
 
-        function normalizeYoutubeItems(items) {
-            return (Array.isArray(items) ? items : []).map(item => {
-                const dateInfo = parseAndFormatDate(item.publishedAt);
-                const cleanDesc = String(item.description || '').replace(/\s+/g, ' ').trim();
-                return {
-                    ...item,
-                    dateLabel: dateInfo.label,
-                    timestamp: dateInfo.timestamp,
-                    videoId: extractYoutubeVideoId(item.link),
-                    description: cleanDesc.length > 130 ? `${cleanDesc.slice(0, 127)}...` : cleanDesc,
-                };
-            }).filter(item => item.videoId && item.link);
-        }
+        async function openReader(link) {
+            const reader = document.getElementById('article-reader');
+            const content = document.getElementById('reader-content');
+            const loading = document.getElementById('reader-loading');
+            const titleEl = document.getElementById('reader-title');
+            const dateEl = document.getElementById('reader-date');
+            const sourceLinkEl = document.getElementById('reader-source-link');
+            const imageWrap = document.getElementById('reader-image-wrap');
+            const imageEl = document.getElementById('reader-image');
 
-        async function fetchYoutubeSlot(lang, slot) {
-            const resp = await fetch(`/api/youtube?lang=${lang}&slot=${slot}`);
-            if (!resp.ok) throw new Error('youtube slot failed');
-
-            const hasMore = resp.headers.get('X-YT-Has-More') === '1';
-            const slotCountHeader = Number.parseInt(resp.headers.get('X-YT-Slot-Count') || '0', 10);
-            const slotCount = Number.isFinite(slotCountHeader) && slotCountHeader > 0 ? slotCountHeader : 1;
-            const data = await resp.json();
-            return {
-                items: normalizeYoutubeItems(data.items),
-                hasMore,
-                slotCount,
-            };
-        }
-
-        async function startYoutubeStream(lang = currentLang) {
-            const loader = document.getElementById('youtube-loader');
-            const grid = document.getElementById('youtube-grid');
-            loader.classList.remove('hidden');
-            loader.innerText = dict[lang].youtubeLoading;
-
-            currentYoutubeSlot = 0;
-            maxYoutubeSlots = 1;
-            youtubePageOffset = 0;
-            youtubeFeedItems = [];
-            grid.innerHTML = '';
-
-            const cached = getCachedYoutube(lang);
-            if (cached && cached.length) {
-                youtubeFeedItems = normalizeYoutubeItems(cached);
-                renderYoutubeStrip(true);
-            }
-
-            await loadMoreYoutubeStream(lang, { force: true });
-            let retries = 0;
-            while (youtubeFeedItems.length === 0 && currentYoutubeSlot < maxYoutubeSlots && retries < maxYoutubeSlots) {
-                await loadMoreYoutubeStream(lang, { force: true });
-                retries += 1;
-            }
-            renderYoutubeStrip(youtubeFeedItems.length > 0 ? false : true);
-            loader.classList.add('hidden');
-        }
-
-        async function loadMoreYoutubeStream(lang = currentLang, options = {}) {
-            if (isLoadingYoutube) return;
-            const force = !!options.force;
-            if (!force && maxYoutubeSlots > 0 && currentYoutubeSlot >= maxYoutubeSlots) return;
-
-            isLoadingYoutube = true;
-            const loader = document.getElementById('youtube-loader');
-            loader.classList.remove('hidden');
-            loader.innerText = dict[lang].youtubeLoading;
-
-            try {
-                const slotToFetch = currentYoutubeSlot;
-                const { items, slotCount } = await fetchYoutubeSlot(lang, slotToFetch);
-
-                maxYoutubeSlots = slotCount;
-                currentYoutubeSlot = slotToFetch + 1;
-                youtubeFeedItems = mergeYoutubeItems(youtubeFeedItems, items);
-
-                setCachedYoutube(lang, youtubeFeedItems);
-            } catch (e) {
-                if (youtubePageOffset === 0 && youtubeFeedItems.length === 0) {
-                    document.getElementById('youtube-grid').innerHTML = `<div class="text-sm text-muted code-font col-span-full">${dict[currentLang].youtubeEmpty}</div>`;
-                }
-            } finally {
-                isLoadingYoutube = false;
-                loader.classList.add('hidden');
-            }
-        }
-
-        function getFilteredYoutubeItemsByType(filterType) {
-            if (filterType === 'all') return [...youtubeFeedItems];
-            return youtubeFeedItems.filter(item => matchesTimeFilter(item, filterType));
-        }
-
-        function renderYoutubeStrip(resetOffset = false) {
-            const grid = document.getElementById('youtube-grid');
-            const btn = document.getElementById('btn-youtube-more');
-
-            if (resetOffset) youtubePageOffset = 0;
-            const filteredYoutube = getFilteredYoutubeItemsByType(currentFilterType);
-
-            if (!filteredYoutube.length) {
-                grid.innerHTML = `<div class="text-sm text-muted code-font col-span-full">${dict[currentLang].youtubeEmpty}</div>`;
-                btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-                return;
-            }
-
-            if (youtubePageOffset >= filteredYoutube.length) {
-                youtubePageOffset = 0;
-            }
-
-            const batch = filteredYoutube.slice(youtubePageOffset, youtubePageOffset + YOUTUBE_BATCH_SIZE);
-            if (!batch.length) {
-                grid.innerHTML = `<div class="text-sm text-muted code-font col-span-full">${dict[currentLang].youtubeEmpty}</div>`;
-                return;
-            }
-
-            grid.innerHTML = batch.map(item => {
-                const thumb = escapeHTML(item.thumbnail || `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`);
-                const safeTitle = escapeHTML(item.title || 'YouTube');
-                const safeDate = escapeHTML(item.dateLabel || '');
-                const safeLink = escapeHTML(item.link);
-                const safeChannel = escapeHTML(item.channel || 'YouTube');
-                const safeDesc = escapeHTML(item.description || '');
-
-                return `
-                    <article class="yt-card app-card rounded-2xl overflow-hidden border border-custom" data-link="${safeLink}" onclick="openYoutubeReader(this.dataset.link)">
-                        <div class="relative h-36 overflow-hidden border-b border-custom">
-                            <img src="${thumb}" alt="${safeTitle}" class="w-full h-full object-cover" loading="lazy">
-                            <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold code-font px-2 py-1 rounded">YouTube</div>
-                            <div class="absolute top-2 right-2 text-[10px] font-bold code-font px-2 py-1 rounded time-badge">${safeDate}</div>
-                        </div>
-                        <div class="p-3">
-                            <h4 class="text-sm font-bold leading-snug min-h-[3.2rem]">${safeTitle}</h4>
-                            <p class="text-xs text-muted mt-2 min-h-[2.8rem]">${safeDesc || '&nbsp;'}</p>
-                            <p class="text-xs text-muted mt-2">${safeChannel}</p>
-                            <div class="mt-3 inline-flex text-xs font-bold bg-accent/20 px-2.5 py-1.5 rounded-lg">${dict[currentLang].youtubeWatch} →</div>
-                        </div>
-                    </article>
-                `;
-            }).join('');
-
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-
-        async function loadNextYoutubeStrip() {
-            const filteredYoutube = getFilteredYoutubeItemsByType(currentFilterType);
-            const desiredNextOffset = youtubePageOffset + YOUTUBE_BATCH_SIZE;
-
-            if (desiredNextOffset < filteredYoutube.length) {
-                youtubePageOffset = desiredNextOffset;
-                renderYoutubeStrip(false);
-                return;
-            }
-
-            if (currentYoutubeSlot < maxYoutubeSlots) {
-                await loadMoreYoutubeStream(currentLang, { force: true });
-                const refreshed = getFilteredYoutubeItemsByType(currentFilterType);
-                if (desiredNextOffset < refreshed.length) {
-                    youtubePageOffset = desiredNextOffset;
-                } else {
-                    youtubePageOffset = 0;
-                }
-                renderYoutubeStrip(false);
-                return;
-            }
-
-            // Когда слоты закончились, начинаем с начала полосы.
-            youtubePageOffset = 0;
-            renderYoutubeStrip(false);
-        }
-
-        function openYoutubeReader(link) {
-            const normalizedLink = String(link || '').split('#')[0];
-            const item = youtubeFeedItems.find(v => String(v.link || '').split('#')[0] === normalizedLink);
+            const normalizedLink = safeHttpUrl(link, '#');
+            const item = allNewsItems.find(n => safeHttpUrl(n.link, '#') === normalizedLink);
             if (!item) return;
 
-            document.getElementById('yt-reader-title').innerText = item.title || '';
-            document.getElementById('yt-reader-date').innerText = item.dateLabel || '';
-            document.getElementById('yt-reader-desc').innerText = item.description || '';
-            document.getElementById('yt-reader-frame').src = `https://www.youtube-nocookie.com/embed/${item.videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
-            document.getElementById('yt-open-link').href = normalizedLink;
-            document.getElementById('youtube-reader').classList.remove('hidden');
+            titleEl.innerText = item.title || '';
+            dateEl.innerText = item.dateLabel || '';
+            sourceLinkEl.href = normalizedLink;
+
+            if (item.img) {
+                imageEl.src = safeHttpUrl(item.img, '');
+                imageWrap.classList.remove('hidden');
+            } else {
+                imageWrap.classList.add('hidden');
+                imageEl.src = '';
+            }
+
+            content.innerHTML = `<p>${escapeHTML(item.desc || '')}</p>`;
+            loading.classList.remove('hidden');
+            reader.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+
+            if (articleContentCache.has(normalizedLink)) {
+                content.innerHTML = articleContentCache.get(normalizedLink);
+                loading.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const resp = await fetchJsonWithTimeout(`/api/article?url=${encodeURIComponent(normalizedLink)}`, 9000);
+                if (!resp.ok) throw new Error('article request failed');
+
+                const payload = await resp.json();
+                const sanitized = sanitizeArticleHtml(payload.content || '');
+                if (!sanitized.trim()) throw new Error('empty article');
+
+                articleContentCache.set(normalizedLink, sanitized);
+                content.innerHTML = sanitized;
+            } catch (e) {
+                content.innerHTML = `<p class="text-sm text-muted">${escapeHTML(dict[currentLang].articleUnavailable)}</p><p>${escapeHTML(item.desc || '')}</p>`;
+            } finally {
+                loading.classList.add('hidden');
+            }
         }
 
-        function closeYoutubeReader() {
-            document.getElementById('youtube-reader').classList.add('hidden');
-            document.getElementById('yt-reader-frame').src = '';
-            if (!document.getElementById('article-reader').classList.contains('hidden')) return;
+        function closeReader() {
+            document.getElementById('article-reader').classList.add('hidden');
             document.body.style.overflow = '';
         }
 
-        function isTechNewsItem(item, lang) {
-            const text = `${item.title || ''} ${item.desc || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
-            const keywords = lang === 'ru' ? TECH_KEYWORDS.ru : TECH_KEYWORDS.en;
-            return keywords.some(keyword => text.includes(keyword));
-        }
-
-        function detectTopicKey(item, lang) {
-            const text = `${item.title || ''} ${item.desc || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
-
-            for (const topicKey of TOPIC_ORDER) {
-                if (topicKey === 'all') continue;
-                const topic = TOPIC_DEFINITIONS[topicKey];
-                if (!topic) continue;
-                const keywords = lang === 'ru' ? topic.ruKeywords : topic.enKeywords;
-                if (keywords.some(keyword => text.includes(keyword))) {
-                    return topicKey;
-                }
-            }
-
-            return 'apps_internet';
-        }
-
-        // Универсальный парсер на базе нативного DOMParser для безопасного и точного чтения RSS/Atom
-        function parseXML(xmlStr) {
-            const items = [];
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlStr, "application/xml");
-            const nodes = xmlDoc.querySelectorAll("item, entry");
-
-            for (const node of nodes) {
-            if (items.length >= 60) break;
-
-                // Заголовок
-                const titleNode = node.querySelector("title");
-                const title = titleNode ? titleNode.textContent.trim() : "Без названия";
-                
-                // Ссылка
-                let link = "#";
-                const linkNodes = node.querySelectorAll("link");
-                for (let i = 0; i < linkNodes.length; i++) {
-                    const lNode = linkNodes[i];
-                    const href = lNode.getAttribute("href");
-                    if (href) {
-                        link = href.trim();
-                        break;
-                    } else if (lNode.textContent && lNode.textContent.trim().startsWith("http")) {
-                        link = lNode.textContent.trim();
-                        break;
-                    }
-                }
-                
-                // Валидация URL
-                try {
-                    link = new URL(link).href;
-                } catch (e) {
-                    link = "#";
-                }
-
-                // Дата
-                const dateNode = node.querySelector("pubDate, published, updated");
-                const pubDate = dateNode ? dateNode.textContent.trim() : "";
-                
-                // Картинка
-                let imgUrl = "";
-                const enclosureNode = node.querySelector("enclosure[url]");
-                const mediaNode = node.querySelector("content[url], thumbnail[url], media\\:content[url], media\\:thumbnail[url]");
-                
-                if (enclosureNode) {
-                    imgUrl = enclosureNode.getAttribute("url");
-                } else if (mediaNode) {
-                    imgUrl = mediaNode.getAttribute("url");
-                }
-
-                // Фолбэк для XML namespace media:* (часто встречается в EN-лентах)
-                if (!imgUrl) {
-                    const mediaContentNodes = node.getElementsByTagNameNS('*', 'content');
-                    for (let i = 0; i < mediaContentNodes.length; i++) {
-                        const candidate = mediaContentNodes[i].getAttribute('url');
-                        if (candidate) {
-                            imgUrl = candidate;
-                            break;
-                        }
-                    }
-                }
-
-                if (!imgUrl) {
-                    const mediaThumbNodes = node.getElementsByTagNameNS('*', 'thumbnail');
-                    for (let i = 0; i < mediaThumbNodes.length; i++) {
-                        const candidate = mediaThumbNodes[i].getAttribute('url');
-                        if (candidate) {
-                            imgUrl = candidate;
-                            break;
-                        }
-                    }
-                }
-
-                // Если в атрибутах нет, ищем в HTML-контенте или описании
-                const descNode = node.querySelector("description, content, summary");
-                let rawDesc = descNode ? descNode.textContent : "";
-
-                // Fallback: content:encoded (присутствует в RSS 2.0 лентах, даёт полный текст)
-                if (!rawDesc.trim()) {
-                    const encodedNode = node.getElementsByTagNameNS('*', 'encoded')[0];
-                    if (encodedNode) rawDesc = encodedNode.textContent || "";
-                }
-
-                const categories = [];
-                const categoryNodes = node.querySelectorAll("category");
-                categoryNodes.forEach(cat => {
-                    const term = cat.getAttribute('term');
-                    const text = cat.textContent;
-                    if (term && term.trim()) categories.push(term.trim());
-                    if (text && text.trim()) categories.push(text.trim());
-                });
-                
-                if (!imgUrl && rawDesc) {
-                    const imgMatch = rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (imgMatch) imgUrl = imgMatch[1];
-                }
-
-                imgUrl = normalizeFeedUrl(imgUrl);
-
-                const tmp = document.createElement("div");
-                tmp.innerHTML = rawDesc;
-                let cleanDesc = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, ' ').trim();
-
-                // Если description был только из картинки или пустой — берём первые слова из content:encoded
-                if (!cleanDesc && !rawDesc.trim()) {
-                    const encodedNode = node.getElementsByTagNameNS('*', 'encoded')[0];
-                    if (encodedNode) {
-                        const encTmp = document.createElement("div");
-                        encTmp.innerHTML = encodedNode.textContent || "";
-                        cleanDesc = (encTmp.textContent || encTmp.innerText || "").replace(/\s+/g, ' ').trim();
-                    }
-                }
-
-                // Сохраняем полный HTML-контент для ридера
-                // content:encoded содержит полный текст статьи и предпочтительнее description
-                const encodedForReader = node.getElementsByTagNameNS('*', 'encoded')[0];
-                const fullHtml = encodedForReader
-                    ? (encodedForReader.textContent || rawDesc)
-                    : rawDesc;
-
-                items.push({
-                    title: title,
-                    link: link,
-                    desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : cleanDesc,
-                    img: safeAbsoluteUrl(imgUrl, ''),
-                    categories: categories,
-                    pubDate: pubDate,
-                    fullHtml: fullHtml,
-                });
-            }
-
-            return items;
-        }
-
-        function getFilteredItemsByType(filterType) {
-            const byTime = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => matchesTimeFilter(item, filterType));
-            if (currentTopicFilter === 'all') return byTime;
-            return byTime.filter(item => item.topic === currentTopicFilter);
-        }
-
-        function hasEnoughPerTopic(items, minPerTopic = 10) {
-            const counts = {};
-            TOPIC_ORDER.forEach(topic => {
-                if (topic !== 'all') counts[topic] = 0;
-            });
-
-            items.forEach(item => {
-                if (item.topic && Object.prototype.hasOwnProperty.call(counts, item.topic)) {
-                    counts[item.topic] += 1;
-                }
-            });
-
-            return Object.values(counts).every(count => count >= minPerTopic);
-        }
-
-        function getCurrentFilterType() {
-            if (document.getElementById('filter-today').classList.contains('active')) return 'today';
-            if (document.getElementById('filter-yesterday').classList.contains('active')) return 'yesterday';
-            if (document.getElementById('filter-week').classList.contains('active')) return 'week';
-            if (document.getElementById('filter-month').classList.contains('active')) return 'month';
-            if (document.getElementById('filter-three-months').classList.contains('active')) return 'three_months';
-            return 'all';
-        }
-
-        function mergeNewsItems(existingItems, incomingItems) {
-            const byLink = new Map();
-            existingItems.forEach(item => {
-                if (item.link) byLink.set(item.link, item);
-            });
-            incomingItems.forEach(item => {
-                if (item.link && !byLink.has(item.link)) {
-                    byLink.set(item.link, item);
-                }
-            });
-            return Array.from(byLink.values()).sort((a, b) => b.timestamp - a.timestamp);
-        }
-
-        function setLoadMoreLoadingState(isLoading) {
-            const loadBtn = document.getElementById('btn-load-more');
-            if (isLoading) {
-                loadBtn.disabled = true;
-                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                loadBtn.innerText = dict[currentLang].loadingMore;
-            } else {
-                loadBtn.disabled = false;
-                loadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                loadBtn.innerText = dict[currentLang].btnLoadMore;
-            }
-        }
-
-        async function ensureCoverageForFilter(filterType) {
-            if (isEnsuringTimeCoverage) return;
-            if (filterType === 'all' || filterType === 'today' || filterType === 'yesterday') return;
-            if (getFilteredItemsByType(filterType).length >= RENDER_BATCH_SIZE) return;
-
-            isEnsuringTimeCoverage = true;
+        async function fetchJsonWithTimeout(url, timeoutMs = 4500) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                let guard = 0;
-                while (hasMoreSourceSlots && guard < maxSourceSlots) {
-                    const nextSlot = currentSourceSlot + 1;
-                    if (nextSlot >= maxSourceSlots) {
-                        hasMoreSourceSlots = false;
-                        break;
-                    }
-
-                    const { items, hasMore } = await fetchFeedSlot(currentLang, nextSlot);
-                    currentSourceSlot = nextSlot;
-                    hasMoreSourceSlots = hasMore;
-                    allNewsItems = mergeNewsItems(allNewsItems, items);
-                    guard += 1;
-
-                    if (getFilteredItemsByType(filterType).length >= RENDER_BATCH_SIZE) {
-                        break;
-                    }
-                }
-
-                allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                setCachedNews(currentLang, allNewsItems, currentSourceSlot, maxSourceSlots);
-            } catch (error) {
-                console.warn('Failed to extend time coverage:', error);
+                const response = await fetch(url, { signal: controller.signal });
+                return response;
             } finally {
-                isEnsuringTimeCoverage = false;
+                clearTimeout(timeoutId);
             }
         }
 
-        async function fetchFeedSlot(requestLang, slot, signal) {
-            const res = await fetch(`/api/news?lang=${requestLang}&slot=${slot}`, { signal });
-            const xmlText = await res.text();
-            if (xmlText.includes('<error>')) throw new Error("Ошибка бэкенда");
+        async function fetchNews(filterType = 'all') {
+            const loader = document.getElementById('loader-list');
+            const grid = document.getElementById('news-grid');
+            const loadContainer = document.getElementById('load-more-container');
 
-            const hasMore = res.headers.get('X-Feed-Has-More') === '1';
-            const slotCountHeader = Number.parseInt(res.headers.get('X-Feed-Slot-Count') || '0', 10);
-            const slotCount = Number.isFinite(slotCountHeader) && slotCountHeader > 0 ? slotCountHeader : 1;
-            const rawItems = parseXML(xmlText).filter(item => isTechNewsItem(item, requestLang));
-            let normalizedItems = rawItems.map(item => {
-                const dateInfo = parseAndFormatDate(item.pubDate);
-                return {
-                    ...item,
-                    dateLabel: dateInfo.label,
-                    category: dateInfo.category,
-                    topic: detectTopicKey(item, requestLang),
-                    timestamp: dateInfo.timestamp
-                };
-            });
-
-            // Для EN оставляем карточки только с реальными изображениями,
-            // чтобы не было "часть с фото, часть без".
-            if (requestLang === 'en') {
-                normalizedItems = normalizedItems.filter(item => !!item.img);
-            }
-
-            return { items: normalizedItems, hasMore, slotCount };
-        }
-
-        async function ensureTopicPrefill(requestLang, signal) {
-            if (isWarmingTopics || !hasMoreSourceSlots) return;
-            isWarmingTopics = true;
-
-            try {
-                // Собираем список оставшихся слотов и загружаем ограниченно параллельно,
-                // чтобы не устраивать всплеск запросов при наплыве пользователей.
-                const slotsToFetch = [];
-                for (let s = currentSourceSlot + 1; s < maxSourceSlots; s++) {
-                    slotsToFetch.push(s);
-                }
-                if (slotsToFetch.length === 0) return;
-
-                const results = [];
-                for (let i = 0; i < slotsToFetch.length; i += PREFILL_PARALLEL_LIMIT) {
-                    const chunk = slotsToFetch.slice(i, i + PREFILL_PARALLEL_LIMIT);
-                    const chunkResults = await Promise.all(
-                        chunk.map(s => fetchFeedSlot(requestLang, s, signal).catch(() => null))
-                    );
-                    results.push(...chunkResults);
-                }
-
-                let lastLoadedSlot = currentSourceSlot;
-                let lastHasMore = false;
-
-                results.forEach((result, idx) => {
-                    if (!result) return;
-                    const s = slotsToFetch[idx];
-                    allNewsItems = mergeNewsItems(allNewsItems, result.items);
-                    lastLoadedSlot = s;
-                    lastHasMore = result.hasMore;
-                });
-
-                currentSourceSlot = lastLoadedSlot;
-                hasMoreSourceSlots = lastHasMore;
-
-                allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
-                filteredNewsItems = getFilteredItemsByType(currentFilterType);
-                renderTopBanner();
-            } catch (e) {
-                if (e.name !== 'AbortError') {
-                    console.warn('Topic prefill skipped:', e);
-                }
-            } finally {
-                isWarmingTopics = false;
-            }
-        }
-
-        async function fetchNews(lang = currentLang, options = {}) {
-            const preserveFilters = !!options.preserveFilters;
-            const requestLang = lang === 'en' ? 'en' : 'ru';
-            const requestToken = ++activeFetchToken;
-            currentSourceSlot = 0;
-            hasMoreSourceSlots = true;
-            maxSourceSlots = SOURCE_SLOT_COUNT[requestLang] || 1;
-            isLoadingOlder = false;
-            if (!preserveFilters) {
-                currentFilterType = 'all';
-                currentTopicFilter = 'all';
-            }
-
-            if (activeFetchController) {
-                activeFetchController.abort();
-            }
-            activeFetchController = new AbortController();
-
-            document.getElementById('loader-list').classList.remove('hidden');
-            document.getElementById('loader-list').innerText = dict[requestLang].loading;
-            document.getElementById('news-grid').innerHTML = '';
-            document.getElementById('load-more-container').classList.add('hidden');
+            loader.classList.remove('hidden');
+            loader.innerText = dict[currentLang].loading;
+            grid.innerHTML = '';
+            loadContainer.classList.add('hidden');
             allNewsItems = [];
 
-            const cachedPayload = getCachedNews(requestLang);
-            if (cachedPayload && cachedPayload.items.length > 0) {
-                if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
-
-                maxSourceSlots = cachedPayload.maxSlots;
-                currentSourceSlot = Math.min(cachedPayload.loadedSlot, Math.max(0, maxSourceSlots - 1));
-                hasMoreSourceSlots = currentSourceSlot < maxSourceSlots - 1;
-
-                allNewsItems = [...cachedPayload.items].sort((a, b) => b.timestamp - a.timestamp);
-                await applyFilter(preserveFilters ? currentFilterType : 'all');
+            const cacheKey = `really_news_${currentLang}`;
+            try {
+                const cachedRaw = localStorage.getItem(cacheKey);
+                if (cachedRaw) {
+                    const cachedItems = JSON.parse(cachedRaw);
+                    if (Array.isArray(cachedItems) && cachedItems.length > 0) {
+                        allNewsItems = cachedItems;
+                        applyFilter(filterType);
+                        loader.innerText = currentLang === 'ru' ? 'Обновление ленты...' : 'Refreshing feed...';
+                        loader.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                // Ignore localStorage/JSON errors and continue with network fetch.
             }
 
             try {
-                const { items, hasMore, slotCount } = await fetchFeedSlot(requestLang, 0, activeFetchController.signal);
+                const seenLinks = new Set();
+                allNewsItems = [];
 
-                if (requestToken !== activeFetchToken || requestLang !== currentLang) return;
+                const collectItems = (payload) => {
+                    (Array.isArray(payload.items) ? payload.items : []).forEach(item => {
+                        if (!item || !item.link || seenLinks.has(item.link)) return;
+                        seenLinks.add(item.link);
+                        const dateInfo = parseAndFormatDate(item.pubDate);
+                        allNewsItems.push({
+                            ...item,
+                            dateLabel: dateInfo.label,
+                            category: dateInfo.category,
+                            timestamp: dateInfo.timestamp
+                        });
+                    });
+                };
 
-                currentSourceSlot = 0;
-                hasMoreSourceSlots = hasMore;
-                maxSourceSlots = slotCount;
-
-                if (allNewsItems.length > 0) {
-                    allNewsItems = mergeNewsItems(items, allNewsItems);
-                } else {
-                    allNewsItems = items;
-                }
+                const response = await fetchJsonWithTimeout(`/api/news?lang=${currentLang}`);
+                const payload = response.ok ? await response.json() : { items: [] };
+                collectItems(payload);
 
                 if (allNewsItems.length === 0) throw new Error("Лента пуста");
 
                 allNewsItems.sort((a, b) => b.timestamp - a.timestamp);
-                setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
-                await applyFilter(preserveFilters ? currentFilterType : 'all');
-                renderTopBanner();
-
-                // Предзагрузка тем идёт в фоне — не блокирует отображение первых карточек.
-                ensureTopicPrefill(requestLang, activeFetchController.signal);
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify(allNewsItems.slice(0, 50)));
+                } catch (e) {
+                    // Ignore quota/private mode issues.
+                }
+                applyFilter(filterType);
+                loader.classList.add('hidden');
 
             } catch (error) {
-                if (error.name === 'AbortError') return;
-                console.error("Критическая ошибка:", error);
-                document.getElementById('loader-list').classList.remove('hidden');
-                document.getElementById('loader-list').innerText = dict[requestLang].error;
-            }
-
-            startYoutubeStream(requestLang);
-        }
-
-        async function loadOlderNews() {
-            if (isLoadingOlder || !hasMoreSourceSlots) return;
-            isLoadingOlder = true;
-            setLoadMoreLoadingState(true);
-
-            try {
-                const requestLang = currentLang;
-                const previousRenderedCount = currentRenderIndex;
-                let appendedAny = false;
-
-                // Пытаемся пройти через проблемный слот и взять первый валидный следующий.
-                while (!appendedAny && currentSourceSlot + 1 < maxSourceSlots) {
-                    const nextSlot = currentSourceSlot + 1;
-                    const { items, hasMore } = await fetchFeedSlot(requestLang, nextSlot);
-
-                    currentSourceSlot = nextSlot;
-                    hasMoreSourceSlots = hasMore;
-
-                    const oldestLoadedTs = allNewsItems.length > 0
-                        ? Math.min(...allNewsItems.map(item => item.timestamp || 0))
-                        : Number.MAX_SAFE_INTEGER;
-                    const olderItems = items.filter(item => (item.timestamp || 0) <= oldestLoadedTs);
-
-                    const beforeCount = allNewsItems.length;
-                    allNewsItems = mergeNewsItems(allNewsItems, olderItems);
-                    appendedAny = allNewsItems.length > beforeCount;
-
-                    if (!hasMoreSourceSlots) break;
+                console.error("Ошибка сети:", error);
+                if (allNewsItems.length === 0) {
+                    loader.classList.remove('hidden');
+                    loader.innerText = dict[currentLang].error;
                 }
-
-                setCachedNews(requestLang, allNewsItems, currentSourceSlot, maxSourceSlots);
-
-                filteredNewsItems = getFilteredItemsByType(currentFilterType);
-                renderTopBanner();
-
-                if (filteredNewsItems.length > previousRenderedCount) {
-                    renderNextBatch();
-                }
-            } catch (error) {
-                console.error("Ошибка догрузки:", error);
             } finally {
-                isLoadingOlder = false;
-                if (hasMoreSourceSlots) {
-                    setLoadMoreLoadingState(false);
+                if (allNewsItems.length > 0) {
+                    loader.classList.add('hidden');
                 }
             }
         }
 
-        function applyTopicFilter(topicKey) {
-            currentTopicFilter = topicKey;
-            document.querySelectorAll('.filter-btn-topic').forEach(btn => btn.classList.remove('active'));
-
-            const topicButtons = document.querySelectorAll('.filter-btn-topic');
-            const selectedIndex = TOPIC_ORDER.indexOf(topicKey);
-            if (selectedIndex >= 0 && topicButtons[selectedIndex]) {
-                topicButtons[selectedIndex].classList.add('active');
-            }
-
-            filteredNewsItems = getFilteredItemsByType(currentFilterType);
-            renderTopBanner();
-            document.getElementById('loader-list').classList.add('hidden');
-            document.getElementById('news-grid').innerHTML = '';
-            currentRenderIndex = 0;
-
-            if (filteredNewsItems.length === 0) {
-                document.getElementById('loader-list').classList.remove('hidden');
-                document.getElementById('loader-list').innerText = dict[currentLang].empty;
-                document.getElementById('load-more-container').classList.add('hidden');
-                return;
-            }
-
-            renderNextBatch();
-        }
-
-        async function applyFilter(filterType) {
+        function applyFilter(filterType) {
             if (allNewsItems.length === 0) return; 
-            currentFilterType = filterType;
-            document.querySelectorAll('.filter-btn-time').forEach(btn => btn.classList.remove('active'));
-            const filterId = filterType === 'three_months' ? 'filter-three-months' : `filter-${filterType}`;
-            document.getElementById(filterId).classList.add('active');
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`filter-${filterType}`).classList.add('active');
 
-            await ensureCoverageForFilter(filterType);
-
-            filteredNewsItems = getFilteredItemsByType(filterType);
-            renderTopBanner();
-            renderYoutubeStrip(true);
+            filteredNewsItems = filterType === 'all' ? [...allNewsItems] : allNewsItems.filter(item => item.category === filterType);
 
             document.getElementById('loader-list').classList.add('hidden');
             document.getElementById('news-grid').innerHTML = '';
@@ -1418,171 +486,31 @@
             renderNextBatch();
         }
 
-        function escapeHTML(str) {
-            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-        }
-
-        // ===== Article Reader =====
-
-        // Кеш подгруженных полных статей (по ссылке)
-        const articleFetchCache = new Map();
-
-        function sanitizeForReader(html) {
-            const el = document.createElement('div');
-            el.innerHTML = html || '';
-            // Убираем потенциально опасные теги
-            el.querySelectorAll('script, iframe, form, object, embed, style, noscript').forEach(n => n.remove());
-            // Убираем рекламные блоки по типичным классам/id
-            el.querySelectorAll(
-                '[class*="advert"], [class*="banner"], [class*="promo"], [id*="advert"],' +
-                '[class*="social-share"], [class*="subscribe"], [class*="newsletter"]'
-            ).forEach(n => n.remove());
-            // Оставляем только абсолютные картинки, убираем лишние атрибуты размеров
-            el.querySelectorAll('img').forEach(img => {
-                const src = img.getAttribute('src') || '';
-                if (!src.startsWith('http') && !src.startsWith('//')) {
-                    img.remove();
-                } else {
-                    img.removeAttribute('width');
-                    img.removeAttribute('height');
-                    img.removeAttribute('style');
-                }
-            });
-            // Все ссылки — в новой вкладке
-            el.querySelectorAll('a[href]').forEach(a => {
-                a.setAttribute('target', '_blank');
-                a.setAttribute('rel', 'noopener noreferrer');
-            });
-            return el.innerHTML;
-        }
-
-        function htmlTextLength(html) {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = html || '';
-            return (tmp.textContent || '').trim().length;
-        }
-
-        async function openReader(link) {
-            const item = allNewsItems.find(i => i.link === link);
-            if (!item) return;
-
-            const isRu = currentLang === 'ru';
-
-            // Заголовок и дата
-            document.getElementById('reader-title').textContent = item.title || '';
-            document.getElementById('reader-date').textContent = item.dateLabel || '';
-
-            // Герой-изображение
-            const hero = document.getElementById('reader-hero');
-            if (item.img) {
-                document.getElementById('reader-img').src = item.img;
-                hero.classList.remove('hidden');
-            } else {
-                hero.classList.add('hidden');
-            }
-
-            // Ссылки на первоисточник
-            const src = item.link || '#';
-            document.getElementById('reader-src-top').href = src;
-            document.getElementById('reader-src-bottom').href = src;
-
-            // Локализация
-            document.getElementById('reader-lbl-back').textContent    = isRu ? 'Назад' : 'Back';
-            document.getElementById('reader-lbl-src').textContent     = isRu ? 'Источник' : 'Source';
-            document.getElementById('reader-lbl-src-bottom').textContent = isRu ? 'Читать на первоисточнике' : 'Read on source';
-
-            // Открываем ридер сразу — контент покажем как только будет готов
-            const reader = document.getElementById('article-reader');
-            reader.classList.remove('hidden');
-            reader.scrollTop = 0;
-            document.body.style.overflow = 'hidden';
-
-            const contentEl = document.getElementById('reader-content');
-            const loadingEl = document.getElementById('reader-loading');
-            loadingEl.textContent = isRu ? 'Загружаем статью...' : 'Loading article...';
-            loadingEl.classList.remove('hidden');
-
-            // Сразу показываем RSS-контент, чтобы ридер открывался мгновенно.
-            const rssHtml = item.fullHtml || `<p>${escapeHTML(item.desc || '')}</p>`;
-            const sanitizedRss = sanitizeForReader(rssHtml);
-            contentEl.innerHTML = sanitizedRss;
-            const rssLen = htmlTextLength(sanitizedRss);
-
-            try {
-                if (articleFetchCache.has(link)) {
-                    const cachedFull = articleFetchCache.get(link);
-                    if (htmlTextLength(cachedFull) > rssLen + 80) {
-                        contentEl.innerHTML = cachedFull;
-                    }
-                    loadingEl.classList.add('hidden');
-                    return;
-                }
-
-                const resp = await fetch(`/api/article?url=${encodeURIComponent(link)}`);
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (data.content) {
-                        const sanitized = sanitizeForReader(data.content);
-                        articleFetchCache.set(link, sanitized);
-
-                        // Обновляем только если fetched-контент реально информативнее RSS.
-                        const fetchedLen = htmlTextLength(sanitized);
-                        if (fetchedLen > rssLen + 80 && document.getElementById('reader-src-top').href === link) {
-                            contentEl.innerHTML = sanitized;
-                        }
-                        loadingEl.classList.add('hidden');
-                        return;
-                    }
-                }
-            } catch (e) {
-                // Тихо игнорируем — оставляем RSS-контент
-            }
-
-            loadingEl.classList.add('hidden');
-        }
-
-        function closeReader() {
-            document.getElementById('article-reader').classList.add('hidden');
-            document.getElementById('reader-loading').classList.add('hidden');
-            if (!document.getElementById('youtube-reader').classList.contains('hidden')) return;
-            document.body.style.overflow = '';
-        }
-
         function renderNextBatch() {
-            if (currentRenderIndex >= filteredNewsItems.length) {
-                if (hasMoreSourceSlots) {
-                    loadOlderNews();
-                }
-                return;
-            }
+            if (currentRenderIndex >= filteredNewsItems.length) return;
 
             const grid = document.getElementById('news-grid');
             const batch = filteredNewsItems.slice(currentRenderIndex, currentRenderIndex + RENDER_BATCH_SIZE);
+            const htmlParts = [];
             
             batch.forEach((news, i) => {
                 const safeTitle = escapeHTML(news.title);
                 const safeDesc = escapeHTML(news.desc);
                 const safeDateLabel = escapeHTML(news.dateLabel);
-                const safeLink = safeAbsoluteUrl(news.link, '#');
-                const directImg = safeAbsoluteUrl(news.img, '');
-                const proxyImg = buildImageProxySrc(news.img);
-                const safeImg = escapeHTML(directImg);
-                const safeProxyImg = escapeHTML(proxyImg);
+                const safeLink = escapeHTML(safeHttpUrl(news.link, '#'));
+                const safeImg = escapeHTML(safeHttpUrl(news.img, ''));
 
-                const imgBlock = safeImg 
-                    ? `<img src="${safeImg}" data-proxy-src="${safeProxyImg}" data-proxy-tried="0" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                       <div class="absolute inset-0 placeholder-bg items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase" style="display:none;">[ NO PHOTO ]</div>`
-                    : `<div class="absolute inset-0 placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
+                const imgBlock = safeImg
+                    ? `<img src="${safeImg}" onerror="handleImageError(this)" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                       <div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase" style="display:none;">[ NO PHOTO ]</div>`
+                    : `<div class="w-full h-full placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
 
-                const cardHtml = `
-                    <article class="tech-card app-card rounded-2xl overflow-hidden group"
-                             style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms"
-                             data-link="${safeLink}"
-                             onclick="openReader(this.dataset.link)">
-                        <div class="flex flex-col h-full cursor-pointer select-none">
+                htmlParts.push(`
+                    <article class="tech-card app-card rounded-2xl overflow-hidden group cursor-pointer" style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms" data-link="${safeLink}" onclick="openReader(this.dataset.link)">
+                        <div class="flex flex-col h-full cursor-pointer outline-none block">
                             <div class="h-48 overflow-hidden border-b border-custom relative">
                                 ${imgBlock}
-                                <div class="absolute top-3 left-3 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-bold code-font shadow-lg time-badge">
+                                <div class="absolute top-3 left-3 news-date-badge backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-bold code-font shadow-lg">
                                     ${safeDateLabel}
                                 </div>
                             </div>
@@ -1596,9 +524,10 @@
                             </div>
                         </div>
                     </article>
-                `;
-                grid.insertAdjacentHTML('beforeend', cardHtml);
+                `);
             });
+
+            grid.insertAdjacentHTML('beforeend', htmlParts.join(''));
 
             currentRenderIndex += RENDER_BATCH_SIZE;
             
@@ -1607,38 +536,21 @@
             
             if (currentRenderIndex >= filteredNewsItems.length) {
                 loadContainer.classList.remove('hidden');
-                if (hasMoreSourceSlots) {
-                    loadBtn.innerText = dict[currentLang].btnLoadMore;
-                    loadBtn.disabled = false;
-                    loadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    loadBtn.innerText = dict[currentLang].noMoreNews;
-                    loadBtn.disabled = true;
-                    loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
+                loadBtn.innerText = dict[currentLang].noMoreNews;
+                loadBtn.disabled = true;
+                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
                 loadContainer.classList.remove('hidden');
             }
         }
         
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('theme-toggle-btn').innerText = '☀️';
             updateTexts();
-            fetchNews(currentLang);
+            fetchNews();
 
             document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') {
-                    closeReader();
-                    closeYoutubeReader();
-                }
+                if (e.key === 'Escape') closeReader();
             });
-
-            // Периодический авто-рефреш, чтобы лента не "застывала" надолго.
-            setInterval(() => {
-                if (!isLoadingOlder) {
-                    fetchNews(currentLang, { preserveFilters: true });
-                }
-            }, 3 * 60 * 1000);
         });
     </script>
 </body>

@@ -1,4 +1,3 @@
-// Допустимые домены — только наши новостные источники.
 const ALLOWED_DOMAINS = new Set([
     'www.engadget.com', 'engadget.com',
     'www.wired.com', 'wired.com',
@@ -13,11 +12,10 @@ const ALLOWED_DOMAINS = new Set([
 
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const STALE_TTL_MS = 6 * 60 * 60 * 1000;
-const FETCH_TIMEOUT_MS = 10000;
+const FETCH_TIMEOUT_MS = 9000;
 const MAX_HTML_SIZE_BYTES = 3 * 1024 * 1024;
-const MAX_CACHE_ENTRIES = 800;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 50;
+const RATE_LIMIT_MAX_REQUESTS = 120;
 
 const articleCache = new Map();
 const inFlightArticles = new Map();
@@ -26,62 +24,75 @@ let requestCounter = 0;
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600');
 
     pruneRateLimitStoreIfNeeded();
-    const clientIp = getClientIp(req);
-    if (isRateLimited(clientIp)) {
+
+    const ip = getClientIp(req);
+    if (isRateLimited(ip)) {
         res.status(429).json({ error: 'Too many requests' });
         return;
     }
 
     const rawUrl = req.query.url;
-    if (!rawUrl) { res.status(400).json({ error: 'Missing url' }); return; }
+    if (!rawUrl || typeof rawUrl !== 'string') {
+        res.status(400).json({ error: 'Missing url' });
+        return;
+    }
 
     let articleUrl;
-    try { articleUrl = new URL(rawUrl); } catch {
-        res.status(400).json({ error: 'Invalid url' }); return;
+    try {
+        articleUrl = new URL(rawUrl);
+    } catch {
+        res.status(400).json({ error: 'Invalid url' });
+        return;
     }
+
     if (!['http:', 'https:'].includes(articleUrl.protocol)) {
-        res.status(400).json({ error: 'Bad protocol' }); return;
+        res.status(400).json({ error: 'Unsupported protocol' });
+        return;
     }
+
     if (!ALLOWED_DOMAINS.has(articleUrl.hostname)) {
-        res.status(403).json({ error: 'Domain not allowed' }); return;
+        res.status(403).json({ error: 'Domain not allowed' });
+        return;
     }
 
     const cacheKey = articleUrl.href;
     const now = Date.now();
     const cached = articleCache.get(cacheKey);
+
     if (cached && now - cached.ts < CACHE_TTL_MS) {
-        res.json({ content: cached.content });
+        res.status(200).json({ content: cached.content, stale: false, cache: 'hit' });
         return;
     }
 
-    const inFlight = inFlightArticles.get(cacheKey);
-    if (inFlight) {
+    const active = inFlightArticles.get(cacheKey);
+    if (active) {
         try {
-            const content = await inFlight;
-            res.json({ content });
+            const content = await active;
+            res.status(200).json({ content, stale: false, cache: 'collapsed' });
             return;
         } catch {
-            // Continue to a new attempt below.
+            // Continue to new attempt.
         }
     }
 
     try {
-        const fetchPromise = fetchAndExtractArticle(articleUrl.href);
-        inFlightArticles.set(cacheKey, fetchPromise);
+        const promise = fetchAndExtractArticle(cacheKey);
+        inFlightArticles.set(cacheKey, promise);
 
-        const content = await fetchPromise;
-        setArticleCache(cacheKey, content, now);
-        res.json({ content });
-    } catch (e) {
+        const content = await promise;
+        articleCache.set(cacheKey, { ts: now, content });
+        res.status(200).json({ content, stale: false, cache: 'miss' });
+    } catch {
         const stale = articleCache.get(cacheKey);
         if (stale && now - stale.ts < STALE_TTL_MS) {
-            res.json({ content: stale.content });
+            res.status(200).json({ content: stale.content, stale: true, cache: 'stale' });
             return;
         }
-        console.error('article fetch error:', e.message);
+
         res.status(502).json({ error: 'Fetch failed' });
     } finally {
         inFlightArticles.delete(cacheKey);
@@ -103,35 +114,66 @@ async function fetchAndExtractArticle(url) {
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`Upstream status ${response.status}`);
-        }
+        if (!response.ok) throw new Error('upstream error');
 
         const html = await response.text();
         if (Buffer.byteLength(html, 'utf8') > MAX_HTML_SIZE_BYTES) {
-            throw new Error('Article HTML payload too large');
+            throw new Error('payload too large');
         }
 
-        return extractArticle(html);
+        const extracted = extractArticle(html);
+        if (!extracted) throw new Error('content not found');
+
+        return extracted;
     } finally {
         clearTimeout(timeout);
     }
 }
 
-function setArticleCache(key, content, ts) {
-    articleCache.set(key, { content, ts });
+function extractArticle(html) {
+    const clean = String(html || '')
+        .replace(/<head[\s\S]*?<\/head>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<(nav|footer|header|form|noscript|aside|iframe|object|embed)[^>]*>[\s\S]*?<\/\1>/gi, '')
+        .replace(/<!--[\s\S]*?-->/g, '');
 
-    if (articleCache.size <= MAX_CACHE_ENTRIES) return;
+    const articleMatch = /<article[^>]*>([\s\S]*?)<\/article>/i.exec(clean);
+    const mainMatch = /<main[^>]*>([\s\S]*?)<\/main>/i.exec(clean);
+    const body = articleMatch ? articleMatch[1] : (mainMatch ? mainMatch[1] : clean);
 
-    let oldestKey = null;
-    let oldestTs = Number.POSITIVE_INFINITY;
-    for (const [cacheKey, value] of articleCache.entries()) {
-        if (value.ts < oldestTs) {
-            oldestTs = value.ts;
-            oldestKey = cacheKey;
+    const results = [];
+    const blockRe = /<(p|h[1-4]|ul|ol|blockquote|figure)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
+    let match;
+    while ((match = blockRe.exec(body)) !== null) {
+        const textOnly = match[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        if (textOnly.length > 30 || match[1] === 'figure') {
+            results.push(match[0]);
         }
     }
-    if (oldestKey) articleCache.delete(oldestKey);
+
+    if (results.length >= 3) return results.join('');
+
+    const paragraphFallback = [];
+    const pRe = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/gi;
+    while ((match = pRe.exec(body)) !== null) {
+        const textOnly = match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        if (textOnly.length > 40) {
+            paragraphFallback.push(`<p>${escapeHtml(textOnly)}</p>`);
+            if (paragraphFallback.length >= 12) break;
+        }
+    }
+
+    return paragraphFallback.length ? paragraphFallback.join('') : null;
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function getClientIp(req) {
@@ -143,6 +185,8 @@ function getClientIp(req) {
 }
 
 function isRateLimited(ip) {
+    if (!ip || ip === 'unknown') return false;
+
     const now = Date.now();
     const entry = rateLimitStore.get(ip);
 
@@ -165,42 +209,4 @@ function pruneRateLimitStoreIfNeeded() {
             rateLimitStore.delete(ip);
         }
     }
-}
-
-/**
- * Извлекает основной текст статьи из HTML-страницы.
- * Стратегия: найти <article> или <main>, затем вытащить блочные элементы в порядке появления.
- */
-function extractArticle(html) {
-    // Убираем ненужные секции
-    let clean = html
-        .replace(/<head[\s\S]*?<\/head>/gi, '')
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[\s\S]*?<\/style>/gi, '')
-        .replace(/<(nav|footer|header|form|noscript|aside|iframe)[^>]*>[\s\S]*?<\/\1>/gi, '')
-        .replace(/<!--[\s\S]*?-->/g, '');
-
-    // Ищем <article> или <main> как основной контейнер
-    let body = clean;
-    const articleM = /<article[^>]*>([\s\S]*?)<\/article>/i.exec(clean);
-    if (articleM) {
-        body = articleM[1];
-    } else {
-        const mainM = /<main[^>]*>([\s\S]*?)<\/main>/i.exec(clean);
-        if (mainM) body = mainM[1];
-    }
-
-    // Извлекаем блочные элементы в порядке их появления
-    const results = [];
-    const blockRe = /<(p|h[1-4]|ul|ol|blockquote|figure)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
-    let m;
-    while ((m = blockRe.exec(body)) !== null) {
-        const textOnly = m[2].replace(/<[^>]+>/g, '').trim();
-        // Пропускаем слишком короткие абзацы (навигация, копирайты и т.п.)
-        if (textOnly.length > 25 || m[1] === 'figure') {
-            results.push(m[0]);
-        }
-    }
-
-    return results.length >= 3 ? results.join('') : null;
 }
