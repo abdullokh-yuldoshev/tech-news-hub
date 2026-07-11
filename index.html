@@ -52,9 +52,26 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
 
         .placeholder-bg { background: linear-gradient(to bottom right, var(--bg-color), var(--card-border)); }
-        .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; }
+        .tech-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease forwards; cursor: pointer; }
         
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* === Article Reader === */
+        #article-reader { background-color: var(--bg-color); }
+        @keyframes readerIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        .reader-body { animation: readerIn 0.25s ease; }
+        .reader-prose { color: var(--text-main); font-size: 0.97rem; line-height: 1.85; }
+        .reader-prose p { margin-bottom: 1rem; }
+        .reader-prose h1 { font-size: 1.4rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
+        .reader-prose h2 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
+        .reader-prose h3 { font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.4rem; }
+        .reader-prose img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 1.25rem 0; display: block; }
+        .reader-prose figure { margin: 1.25rem 0; }
+        .reader-prose figcaption { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 0.3rem; }
+        .reader-prose a { color: var(--accent); text-decoration: underline; word-break: break-word; }
+        .reader-prose ul, .reader-prose ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+        .reader-prose li { margin-bottom: 0.3rem; }
+        .reader-prose blockquote { border-left: 3px solid var(--card-border); padding-left: 1rem; color: var(--text-muted); margin: 1rem 0; }
     </style>
 </head>
 <body class="min-h-screen"> 
@@ -111,6 +128,50 @@
         <p id="txt-footer"></p>
     </footer>
 
+    <!-- ===== Article Reader Overlay ===== -->
+    <div id="article-reader" class="fixed inset-0 z-[100] hidden overflow-y-auto">
+        <div class="reader-body max-w-3xl mx-auto px-4 sm:px-6 pb-20">
+
+            <!-- Sticky nav bar -->
+            <div class="sticky top-0 z-10 flex items-center justify-between py-4 mb-2"
+                 style="background-color: var(--bg-color); border-bottom: 1px solid var(--card-border);">
+                <button onclick="closeReader()"
+                        class="app-card flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all">
+                    ← <span id="reader-lbl-back">Назад</span>
+                </button>
+                <a id="reader-src-top" href="#" target="_blank" rel="noopener noreferrer"
+                   class="bg-accent flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-bold hover:opacity-80 transition-all"
+                   style="color: var(--btn-text);">
+                    <span id="reader-lbl-src">Источник</span> ↗
+                </a>
+            </div>
+
+            <!-- Article -->
+            <article class="pt-6">
+                <h1 id="reader-title" class="text-2xl font-extrabold leading-tight mb-2"></h1>
+                <p id="reader-date" class="text-xs code-font text-muted mb-6"></p>
+
+                <!-- Hero image -->
+                <div id="reader-hero" class="h-72 rounded-2xl overflow-hidden mb-8 hidden">
+                    <img id="reader-img" src="" alt="" class="w-full h-full object-cover"
+                         onerror="document.getElementById('reader-hero').classList.add('hidden')">
+                </div>
+
+                <!-- Full article content -->
+                <div id="reader-content" class="reader-prose"></div>
+            </article>
+
+            <!-- Bottom link to source -->
+            <div class="mt-16 pt-8 border-t border-custom text-center">
+                <a id="reader-src-bottom" href="#" target="_blank" rel="noopener noreferrer"
+                   class="bg-accent inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold hover:opacity-80 transition-all"
+                   style="color: var(--btn-text);">
+                    <span id="reader-lbl-src-bottom">Читать на первоисточнике</span> ↗
+                </a>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentLang = 'ru';
         let currentTheme = 'dark';
@@ -128,7 +189,7 @@
         let isLoadingOlder = false;
         let isWarmingTopics = false;
         const RENDER_BATCH_SIZE = 9;
-        const NEWS_CACHE_PREFIX = 'really_news_cache_v4_';
+        const NEWS_CACHE_PREFIX = 'really_news_cache_v5_';
         const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
         const SOURCE_SLOT_COUNT = { ru: 3, en: 6 };
         const TECH_KEYWORDS = {
@@ -554,13 +615,21 @@
                     }
                 }
 
+                // Сохраняем полный HTML-контент для ридера
+                // content:encoded содержит полный текст статьи и предпочтительнее description
+                const encodedForReader = node.getElementsByTagNameNS('*', 'encoded')[0];
+                const fullHtml = encodedForReader
+                    ? (encodedForReader.textContent || rawDesc)
+                    : rawDesc;
+
                 items.push({
                     title: title,
                     link: link,
                     desc: cleanDesc.length > 110 ? cleanDesc.substring(0, 110).trim() + '...' : cleanDesc,
                     img: safeAbsoluteUrl(imgUrl, ''),
                     categories: categories,
-                    pubDate: pubDate
+                    pubDate: pubDate,
+                    fullHtml: fullHtml,
                 });
             }
 
@@ -861,6 +930,128 @@
             return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
+        // ===== Article Reader =====
+
+        // Кеш подгруженных полных статей (по ссылке)
+        const articleFetchCache = new Map();
+
+        function sanitizeForReader(html) {
+            const el = document.createElement('div');
+            el.innerHTML = html || '';
+            // Убираем потенциально опасные теги
+            el.querySelectorAll('script, iframe, form, object, embed, style, noscript').forEach(n => n.remove());
+            // Убираем рекламные блоки по типичным классам/id
+            el.querySelectorAll(
+                '[class*="advert"], [class*="banner"], [class*="promo"], [id*="advert"],' +
+                '[class*="social-share"], [class*="subscribe"], [class*="newsletter"]'
+            ).forEach(n => n.remove());
+            // Оставляем только абсолютные картинки, убираем лишние атрибуты размеров
+            el.querySelectorAll('img').forEach(img => {
+                const src = img.getAttribute('src') || '';
+                if (!src.startsWith('http') && !src.startsWith('//')) {
+                    img.remove();
+                } else {
+                    img.removeAttribute('width');
+                    img.removeAttribute('height');
+                    img.removeAttribute('style');
+                }
+            });
+            // Все ссылки — в новой вкладке
+            el.querySelectorAll('a[href]').forEach(a => {
+                a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
+            });
+            return el.innerHTML;
+        }
+
+        function htmlTextLength(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html || '';
+            return (tmp.textContent || '').trim().length;
+        }
+
+        async function openReader(link) {
+            const item = allNewsItems.find(i => i.link === link);
+            if (!item) return;
+
+            const isRu = currentLang === 'ru';
+
+            // Заголовок и дата
+            document.getElementById('reader-title').textContent = item.title || '';
+            document.getElementById('reader-date').textContent = item.dateLabel || '';
+
+            // Герой-изображение
+            const hero = document.getElementById('reader-hero');
+            if (item.img) {
+                document.getElementById('reader-img').src = item.img;
+                hero.classList.remove('hidden');
+            } else {
+                hero.classList.add('hidden');
+            }
+
+            // Ссылки на первоисточник
+            const src = item.link || '#';
+            document.getElementById('reader-src-top').href = src;
+            document.getElementById('reader-src-bottom').href = src;
+
+            // Локализация
+            document.getElementById('reader-lbl-back').textContent    = isRu ? 'Назад' : 'Back';
+            document.getElementById('reader-lbl-src').textContent     = isRu ? 'Источник' : 'Source';
+            document.getElementById('reader-lbl-src-bottom').textContent = isRu ? 'Читать на первоисточнике' : 'Read on source';
+
+            // Открываем ридер сразу — контент покажем как только будет готов
+            const reader = document.getElementById('article-reader');
+            reader.classList.remove('hidden');
+            reader.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+
+            const contentEl = document.getElementById('reader-content');
+
+            // Определяем, достаточно ли контента из RSS (> 300 символов текста)
+            const rssHtml  = item.fullHtml || '';
+            const rssLen   = htmlTextLength(rssHtml);
+
+            if (rssLen >= 300) {
+                // RSS уже содержит полный текст (hi-tech.mail.ru, The Verge и др.)
+                contentEl.innerHTML = sanitizeForReader(rssHtml);
+                return;
+            }
+
+            // RSS-контент слишком короткий — показываем заглушку и тянем полную статью
+            contentEl.innerHTML = `<p class="text-muted code-font text-sm" style="text-align:center;padding:2rem 0;">${isRu ? 'Загружаем полную статью...' : 'Loading full article...'}</p>`;
+
+            try {
+                if (articleFetchCache.has(link)) {
+                    contentEl.innerHTML = articleFetchCache.get(link);
+                    return;
+                }
+
+                const resp = await fetch(`/api/article?url=${encodeURIComponent(link)}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.content) {
+                        const sanitized = sanitizeForReader(data.content);
+                        articleFetchCache.set(link, sanitized);
+                        // Проверяем, что читалка ещё открыта для той же статьи
+                        if (document.getElementById('reader-src-top').href === link) {
+                            contentEl.innerHTML = sanitized;
+                        }
+                        return;
+                    }
+                }
+            } catch (e) {
+                // Тихо игнорируем — покажем fallback
+            }
+
+            // Fallback: показываем то, что есть в RSS
+            contentEl.innerHTML = sanitizeForReader(rssHtml || `<p>${escapeHTML(item.desc || '')}</p>`);
+        }
+
+        function closeReader() {
+            document.getElementById('article-reader').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
         function renderNextBatch() {
             if (currentRenderIndex >= filteredNewsItems.length) {
                 if (hasMoreSourceSlots) {
@@ -888,11 +1079,14 @@
                     : `<div class="absolute inset-0 placeholder-bg flex items-center justify-center text-xs font-bold text-[var(--text-main)] code-font uppercase">[ NO PHOTO ]</div>`;
 
                 const cardHtml = `
-                    <article class="tech-card app-card rounded-2xl overflow-hidden group" style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms">
-                        <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="flex flex-col h-full cursor-pointer outline-none block">
+                    <article class="tech-card app-card rounded-2xl overflow-hidden group"
+                             style="animation-delay: ${(i % RENDER_BATCH_SIZE) * 50}ms"
+                             data-link="${safeLink}"
+                             onclick="openReader(this.dataset.link)">
+                        <div class="flex flex-col h-full cursor-pointer select-none">
                             <div class="h-48 overflow-hidden border-b border-custom relative">
                                 ${imgBlock}
-                                <div class="absolute top-3 left-3 bg-[#0a1128]/90 backdrop-blur-md border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)] shadow-lg">
+                                <div class="absolute top-3 left-3 bg-[#0d1b2a]/90 backdrop-blur-md border border-custom px-2.5 py-1 rounded-md text-[10px] font-bold code-font text-[var(--text-main)] shadow-lg">
                                     ${safeDateLabel}
                                 </div>
                             </div>
@@ -904,7 +1098,7 @@
                                 <span class="text-muted code-font">REALLY? NEWS</span>
                                 <span class="text-[var(--text-main)] font-bold flex items-center gap-1 bg-accent/20 px-3 py-1.5 rounded-lg group-hover:bg-accent group-hover:text-[var(--btn-text)] transition-colors">${dict[currentLang].readMore} →</span>
                             </div>
-                        </a>
+                        </div>
                     </article>
                 `;
                 grid.insertAdjacentHTML('beforeend', cardHtml);
@@ -934,6 +1128,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             updateTexts();
             fetchNews(currentLang);
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') closeReader();
+            });
 
             // Периодический авто-рефреш, чтобы лента не "застывала" надолго.
             setInterval(() => {
