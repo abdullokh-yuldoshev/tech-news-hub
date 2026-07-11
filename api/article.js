@@ -11,12 +11,29 @@ const ALLOWED_DOMAINS = new Set([
     'www.cnews.ru', 'cnews.ru',
 ]);
 
-const articleCache = {};
 const CACHE_TTL_MS = 30 * 60 * 1000;
+const STALE_TTL_MS = 6 * 60 * 60 * 1000;
+const FETCH_TIMEOUT_MS = 10000;
+const MAX_HTML_SIZE_BYTES = 3 * 1024 * 1024;
+const MAX_CACHE_ENTRIES = 800;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 50;
+
+const articleCache = new Map();
+const inFlightArticles = new Map();
+const rateLimitStore = new Map();
+let requestCounter = 0;
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+
+    pruneRateLimitStoreIfNeeded();
+    const clientIp = getClientIp(req);
+    if (isRateLimited(clientIp)) {
+        res.status(429).json({ error: 'Too many requests' });
+        return;
+    }
 
     const rawUrl = req.query.url;
     if (!rawUrl) { res.status(400).json({ error: 'Missing url' }); return; }
@@ -33,17 +50,50 @@ export default async function handler(req, res) {
     }
 
     const cacheKey = articleUrl.href;
-    const cached = articleCache[cacheKey];
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    const now = Date.now();
+    const cached = articleCache.get(cacheKey);
+    if (cached && now - cached.ts < CACHE_TTL_MS) {
         res.json({ content: cached.content });
         return;
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const inFlight = inFlightArticles.get(cacheKey);
+    if (inFlight) {
+        try {
+            const content = await inFlight;
+            res.json({ content });
+            return;
+        } catch {
+            // Continue to a new attempt below.
+        }
+    }
 
     try {
-        const response = await fetch(articleUrl.href, {
+        const fetchPromise = fetchAndExtractArticle(articleUrl.href);
+        inFlightArticles.set(cacheKey, fetchPromise);
+
+        const content = await fetchPromise;
+        setArticleCache(cacheKey, content, now);
+        res.json({ content });
+    } catch (e) {
+        const stale = articleCache.get(cacheKey);
+        if (stale && now - stale.ts < STALE_TTL_MS) {
+            res.json({ content: stale.content });
+            return;
+        }
+        console.error('article fetch error:', e.message);
+        res.status(502).json({ error: 'Fetch failed' });
+    } finally {
+        inFlightArticles.delete(cacheKey);
+    }
+}
+
+async function fetchAndExtractArticle(url) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+        const response = await fetch(url, {
             signal: controller.signal,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
@@ -52,21 +102,68 @@ export default async function handler(req, res) {
                 'Cache-Control': 'no-cache',
             }
         });
-        clearTimeout(timeout);
 
         if (!response.ok) {
-            res.status(response.status).json({ error: 'Upstream error' }); return;
+            throw new Error(`Upstream status ${response.status}`);
         }
 
         const html = await response.text();
-        const content = extractArticle(html);
+        if (Buffer.byteLength(html, 'utf8') > MAX_HTML_SIZE_BYTES) {
+            throw new Error('Article HTML payload too large');
+        }
 
-        articleCache[cacheKey] = { content, ts: Date.now() };
-        res.json({ content });
-    } catch (e) {
+        return extractArticle(html);
+    } finally {
         clearTimeout(timeout);
-        console.error('article fetch error:', e.message);
-        res.status(502).json({ error: 'Fetch failed' });
+    }
+}
+
+function setArticleCache(key, content, ts) {
+    articleCache.set(key, { content, ts });
+
+    if (articleCache.size <= MAX_CACHE_ENTRIES) return;
+
+    let oldestKey = null;
+    let oldestTs = Number.POSITIVE_INFINITY;
+    for (const [cacheKey, value] of articleCache.entries()) {
+        if (value.ts < oldestTs) {
+            oldestTs = value.ts;
+            oldestKey = cacheKey;
+        }
+    }
+    if (oldestKey) articleCache.delete(oldestKey);
+}
+
+function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.length > 0) {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.socket?.remoteAddress || 'unknown';
+}
+
+function isRateLimited(ip) {
+    const now = Date.now();
+    const entry = rateLimitStore.get(ip);
+
+    if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+        rateLimitStore.set(ip, { windowStart: now, count: 1 });
+        return false;
+    }
+
+    entry.count += 1;
+    return entry.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
+function pruneRateLimitStoreIfNeeded() {
+    requestCounter += 1;
+    if (requestCounter % 200 !== 0) return;
+
+    const now = Date.now();
+    for (const [ip, entry] of rateLimitStore.entries()) {
+        if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS * 2) {
+            rateLimitStore.delete(ip);
+        }
     }
 }
 

@@ -191,6 +191,7 @@
         const RENDER_BATCH_SIZE = 9;
         const NEWS_CACHE_PREFIX = 'really_news_cache_v5_';
         const NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
+        const PREFILL_PARALLEL_LIMIT = 2;
         const SOURCE_SLOT_COUNT = { ru: 3, en: 6 };
         const TECH_KEYWORDS = {
             ru: [
@@ -723,16 +724,22 @@
             isWarmingTopics = true;
 
             try {
-                // Собираем список оставшихся слотов и загружаем их ПАРАЛЛЕЛЬНО.
+                // Собираем список оставшихся слотов и загружаем ограниченно параллельно,
+                // чтобы не устраивать всплеск запросов при наплыве пользователей.
                 const slotsToFetch = [];
                 for (let s = currentSourceSlot + 1; s < maxSourceSlots; s++) {
                     slotsToFetch.push(s);
                 }
                 if (slotsToFetch.length === 0) return;
 
-                const results = await Promise.all(
-                    slotsToFetch.map(s => fetchFeedSlot(requestLang, s, signal).catch(() => null))
-                );
+                const results = [];
+                for (let i = 0; i < slotsToFetch.length; i += PREFILL_PARALLEL_LIMIT) {
+                    const chunk = slotsToFetch.slice(i, i + PREFILL_PARALLEL_LIMIT);
+                    const chunkResults = await Promise.all(
+                        chunk.map(s => fetchFeedSlot(requestLang, s, signal).catch(() => null))
+                    );
+                    results.push(...chunkResults);
+                }
 
                 let lastLoadedSlot = currentSourceSlot;
                 let lastHasMore = false;
@@ -1007,22 +1014,18 @@
 
             const contentEl = document.getElementById('reader-content');
 
-            // Определяем, достаточно ли контента из RSS (> 300 символов текста)
-            const rssHtml  = item.fullHtml || '';
-            const rssLen   = htmlTextLength(rssHtml);
-
-            if (rssLen >= 300) {
-                // RSS уже содержит полный текст (hi-tech.mail.ru, The Verge и др.)
-                contentEl.innerHTML = sanitizeForReader(rssHtml);
-                return;
-            }
-
-            // RSS-контент слишком короткий — показываем заглушку и тянем полную статью
-            contentEl.innerHTML = `<p class="text-muted code-font text-sm" style="text-align:center;padding:2rem 0;">${isRu ? 'Загружаем полную статью...' : 'Loading full article...'}</p>`;
+            // Сразу показываем RSS-контент, чтобы ридер открывался мгновенно.
+            const rssHtml = item.fullHtml || `<p>${escapeHTML(item.desc || '')}</p>`;
+            const sanitizedRss = sanitizeForReader(rssHtml);
+            contentEl.innerHTML = sanitizedRss;
+            const rssLen = htmlTextLength(sanitizedRss);
 
             try {
                 if (articleFetchCache.has(link)) {
-                    contentEl.innerHTML = articleFetchCache.get(link);
+                    const cachedFull = articleFetchCache.get(link);
+                    if (htmlTextLength(cachedFull) > rssLen + 80) {
+                        contentEl.innerHTML = cachedFull;
+                    }
                     return;
                 }
 
@@ -1032,19 +1035,18 @@
                     if (data.content) {
                         const sanitized = sanitizeForReader(data.content);
                         articleFetchCache.set(link, sanitized);
-                        // Проверяем, что читалка ещё открыта для той же статьи
-                        if (document.getElementById('reader-src-top').href === link) {
+
+                        // Обновляем только если fetched-контент реально информативнее RSS.
+                        const fetchedLen = htmlTextLength(sanitized);
+                        if (fetchedLen > rssLen + 80 && document.getElementById('reader-src-top').href === link) {
                             contentEl.innerHTML = sanitized;
                         }
                         return;
                     }
                 }
             } catch (e) {
-                // Тихо игнорируем — покажем fallback
+                // Тихо игнорируем — оставляем RSS-контент
             }
-
-            // Fallback: показываем то, что есть в RSS
-            contentEl.innerHTML = sanitizeForReader(rssHtml || `<p>${escapeHTML(item.desc || '')}</p>`);
         }
 
         function closeReader() {
